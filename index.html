@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Carnet de devis SLVS</title>
+<meta name="theme-color" content="#14181B" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Devis SLVS" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon-180.png" />
+<link rel="icon" href="icon-192.png" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  body { margin: 0; -webkit-tap-highlight-color: transparent; }
+  @media print { @page { margin: 12mm; } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-presets="react">
+    const { useState, useMemo, useRef } = React;
+
+
+    function Icon({ children, className }) {
+      return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>;
+    }
+    const Plus = ({className}) => <Icon className={className}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Icon>;
+    const Trash2 = ({className}) => <Icon className={className}><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></Icon>;
+    const Mic = ({className}) => <Icon className={className}><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></Icon>;
+    const MicOff = ({className}) => <Icon className={className}><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2"/><path d="M19 10v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></Icon>;
+    const ChevronDown = ({className}) => <Icon className={className}><polyline points="6 9 12 15 18 9"/></Icon>;
+    const FileDown = ({className}) => <Icon className={className}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="12" x2="12" y2="18"/><polyline points="9 15 12 18 15 15"/></Icon>;
+    const Cloud = ({className}) => <Icon className={className}><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></Icon>;
+    const Wrench = ({className}) => <Icon className={className}><path d="M14.7 6.3a4 4 0 0 1-5.4 5.4l-6 6a2 2 0 0 0 2.8 2.8l6-6a4 4 0 0 1 5.4-5.4l-2.8 2.8-2-2z"/></Icon>;
+    const Settings = ({className}) => <Icon className={className}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></Icon>;
+    const X = ({className}) => <Icon className={className}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></Icon>;
+    const Printer = ({className}) => <Icon className={className}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></Icon>;
+    const UserPlus = ({className}) => <Icon className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="17" y1="11" x2="23" y2="11"/></Icon>;
+    const StickyNote = ({className}) => <Icon className={className}><path d="M21 3H3a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h13l6-6V4a1 1 0 0 0-1-1z"/><path d="M15 21v-6h6"/></Icon>;
+
+
+const MATERIALS = [{"name": "vanneboulelaiton", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}]}, {"name": "vannebouleinox316", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": 8.2}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": 9.0}, {"label": "Ø34", "price": 14.0}, {"label": "Ø42", "price": 22.0}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": 40.0}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}]}, {"name": "vanne_papillon_taraudé", "category": "Tuyauterie", "items": [{"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}, {"label": "Ø139", "price": null}, {"label": "Ø168", "price": null}, {"label": "Ø219", "price": null}, {"label": "Ø273", "price": null}]}, {"name": "vanne_papillon", "category": "Tuyauterie", "items": [{"label": "Ø60", "price": null}, {"label": "Ø76", "price": 70.0}, {"label": "Ø88,9", "price": 76.0}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": 105.0}, {"label": "Ø139", "price": null}, {"label": "Ø168", "price": null}, {"label": "Ø219", "price": null}, {"label": "Ø273", "price": null}, {"label": "Ø323", "price": null}]}, {"name": "bride_tournante_inox", "category": "Tuyauterie", "items": [{"label": "PN10_Ø21", "price": null}, {"label": "PN10_Ø27", "price": null}, {"label": "PN10_Ø34", "price": null}, {"label": "PN10_Ø42", "price": null}, {"label": "PN10_Ø60", "price": null}, {"label": "PN10_Ø76", "price": null}, {"label": "PN10_Ø88", "price": null}, {"label": "PN10_Ø104", "price": null}, {"label": "PN10_Ø114", "price": 8.5}, {"label": "PN16_Ø114", "price": null}, {"label": "PN40_Ø114", "price": null}, {"label": "PN10_Ø139", "price": null}, {"label": "PN16_Ø139", "price": null}, {"label": "PN40_Ø139", "price": null}, {"label": "PN10_Ø168", "price": null}, {"label": "PN16_Ø168", "price": null}, {"label": "PN40_Ø168", "price": null}, {"label": "PN10_Ø219", "price": null}, {"label": "PN16_Ø219", "price": null}, {"label": "PN40_Ø219", "price": null}, {"label": "PN10_Ø273", "price": null}, {"label": "PN16_Ø273", "price": null}, {"label": "PN40_Ø273", "price": null}, {"label": "PN10_Ø323", "price": null}, {"label": "PN16_Ø323", "price": null}, {"label": "PN40_Ø323", "price": null}]}, {"name": "Bride_tournante_alu ", "category": "Tuyauterie", "items": [{"label": "PN10_Ø21", "price": null}, {"label": "PN10_Ø27", "price": null}, {"label": "PN10_Ø34", "price": null}, {"label": "PN10_Ø42", "price": null}, {"label": "PN10_Ø60", "price": 3.0}, {"label": "PN10_Ø76", "price": 4.5}, {"label": "PN16_Ø88", "price": 5.2}, {"label": "PN10_Ø104", "price": null}, {"label": "PN10_Ø114", "price": 5.7}, {"label": "PN16_Ø114", "price": null}, {"label": "PN40_Ø114", "price": null}, {"label": "PN10_Ø139", "price": null}, {"label": "PN16_Ø139", "price": null}, {"label": "PN40_Ø139", "price": null}, {"label": "PN10_Ø168", "price": null}, {"label": "PN16_Ø168", "price": null}, {"label": "PN40_Ø168", "price": null}, {"label": "PN10_Ø219", "price": null}, {"label": "PN16_Ø219", "price": null}, {"label": "PN40_Ø219", "price": null}, {"label": "PN10_Ø273", "price": null}, {"label": "PN16_Ø273", "price": null}, {"label": "PN40_Ø273", "price": null}, {"label": "PN10_Ø323", "price": null}, {"label": "PN16_Ø323", "price": null}, {"label": "PN40_Ø323", "price": null}]}, {"name": "Bride_tournante_Cadmié", "category": "Tuyauterie", "items": [{"label": "PN10_Ø21", "price": null}, {"label": "PN10_Ø27", "price": null}, {"label": "PN10_Ø34", "price": null}, {"label": "PN10_Ø42", "price": null}, {"label": "PN10_Ø60", "price": null}, {"label": "PN10_Ø76", "price": null}, {"label": "PN10_Ø88", "price": null}, {"label": "PN10_Ø104", "price": null}, {"label": "PN10_Ø114", "price": null}, {"label": "PN16_Ø114", "price": null}, {"label": "PN40_Ø114", "price": null}, {"label": "PN10_Ø139", "price": null}, {"label": "PN16_Ø139", "price": null}, {"label": "PN40_Ø139", "price": null}, {"label": "PN10_Ø168", "price": null}, {"label": "PN16_Ø168", "price": null}, {"label": "PN40_Ø168", "price": null}, {"label": "PN10_Ø219", "price": null}, {"label": "PN16_Ø219", "price": null}, {"label": "PN40_Ø219", "price": null}, {"label": "PN10_Ø273", "price": null}, {"label": "PN16_Ø273", "price": null}, {"label": "PN40_Ø273", "price": null}, {"label": "PN10_Ø323", "price": null}, {"label": "PN16_Ø323", "price": null}, {"label": "PN40_Ø323", "price": null}]}, {"name": "Tampon_plein_inox", "category": "Tuyauterie", "items": [{"label": "PN10_Ø21", "price": null}, {"label": "PN10_Ø27", "price": null}, {"label": "PN10_Ø34", "price": null}, {"label": "PN10_Ø42", "price": null}, {"label": "PN10_Ø60", "price": null}, {"label": "PN10_Ø76", "price": 22.0}, {"label": "PN10_Ø88", "price": null}, {"label": "PN10_Ø104", "price": null}, {"label": "PN10_Ø114", "price": null}, {"label": "PN16_Ø114", "price": 30.0}, {"label": "PN40_Ø114", "price": null}, {"label": "PN10_Ø139", "price": null}, {"label": "PN16_Ø139", "price": null}, {"label": "PN40_Ø139", "price": null}, {"label": "PN10_Ø168", "price": null}, {"label": "PN16_Ø168", "price": null}, {"label": "PN40_Ø168", "price": null}, {"label": "PN10_Ø219", "price": null}, {"label": "PN16_Ø219", "price": null}, {"label": "PN40_Ø219", "price": null}, {"label": "PN10_Ø273", "price": null}, {"label": "PN16_Ø273", "price": null}, {"label": "PN40_Ø273", "price": null}, {"label": "PN10_Ø323", "price": null}, {"label": "PN16_Ø323", "price": null}, {"label": "PN40_Ø323", "price": null}]}, {"name": "Bride_plate_inox", "category": "Tuyauterie", "items": [{"label": "PN10_Ø34", "price": null}, {"label": "PN10_Ø42", "price": null}, {"label": "PN10_Ø48", "price": null}, {"label": "PN10_Ø60", "price": null}, {"label": "PN10_Ø88", "price": null}, {"label": "PN10_Ø104", "price": null}, {"label": "PN10_Ø114", "price": null}, {"label": "PN16_Ø114", "price": null}, {"label": "PN10_Ø139", "price": null}, {"label": "PN16_Ø139", "price": null}, {"label": "PN10_Ø168", "price": null}, {"label": "PN16_Ø168", "price": null}, {"label": "PN10_Ø219", "price": null}, {"label": "PN16_Ø219", "price": null}, {"label": "PN10_Ø273", "price": null}, {"label": "PN16_Ø273", "price": null}, {"label": "PN10_Ø323", "price": null}, {"label": "PN16_Ø323", "price": null}]}, {"name": "bride_plate_acier", "category": "Tuyauterie", "items": [{"label": "PN10_Ø34", "price": null}, {"label": "PN10_Ø42", "price": null}, {"label": "PN10_Ø48", "price": null}, {"label": "PN10_Ø60", "price": null}, {"label": "PN10_Ø88", "price": null}, {"label": "PN10_Ø104", "price": null}, {"label": "PN10_Ø114", "price": null}, {"label": "PN16_Ø114", "price": null}, {"label": "PN10_Ø139", "price": null}, {"label": "PN16_Ø139", "price": null}, {"label": "PN10_Ø168", "price": null}, {"label": "PN16_Ø168", "price": null}, {"label": "PN10_Ø219", "price": null}, {"label": "PN16_Ø219", "price": null}, {"label": "PN10_Ø273", "price": null}, {"label": "PN16_Ø273", "price": null}, {"label": "PN10_Ø323", "price": null}, {"label": "PN16_Ø323", "price": null}]}, {"name": "Bride_collerette_acier", "category": "Tuyauterie", "items": [{"label": "PN10_Ø34", "price": null}, {"label": "PN10_Ø42", "price": null}, {"label": "PN10_Ø48", "price": null}, {"label": "PN10_Ø60", "price": null}, {"label": "PN10_Ø88", "price": null}, {"label": "PN10_Ø104", "price": null}, {"label": "PN10_Ø114", "price": null}, {"label": "PN16_Ø114", "price": null}, {"label": "PN40_Ø114", "price": 25.0}, {"label": "PN10_Ø139", "price": null}, {"label": "PN16_Ø139", "price": null}, {"label": "PN40_Ø139", "price": null}, {"label": "PN10_Ø168", "price": null}, {"label": "PN16_Ø168", "price": null}, {"label": "PN40_Ø168", "price": null}, {"label": "PN10_Ø219", "price": null}, {"label": "PN16_Ø219", "price": null}, {"label": "PN40_Ø219", "price": null}, {"label": "PN10_Ø273", "price": null}, {"label": "PN16_Ø273", "price": null}, {"label": "PN40_Ø273", "price": null}, {"label": "PN10_Ø323", "price": null}, {"label": "PN16_Ø323", "price": null}, {"label": "PN40_Ø323", "price": null}]}, {"name": "Collet_mince_inox304L", "category": "Tuyauterie", "items": [{"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": 1.5}, {"label": "Ø88,9", "price": 1.7}, {"label": "Ø104", "price": 2.75}, {"label": "Ø114", "price": 2.3}, {"label": "Ø139", "price": null}, {"label": "Ø168", "price": null}, {"label": "Ø219", "price": null}, {"label": "Ø273", "price": null}, {"label": "Ø323", "price": null}]}, {"name": "Collet_mince_inox316L", "category": "Tuyauterie", "items": [{"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}, {"label": "Ø139", "price": null}, {"label": "Ø168", "price": null}, {"label": "Ø219", "price": null}, {"label": "Ø273", "price": null}, {"label": "Ø323", "price": null}]}, {"name": "Collet_epais_inox304L", "category": "Tuyauterie", "items": [{"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": 10.0}, {"label": "Ø139", "price": null}, {"label": "Ø168", "price": null}, {"label": "Ø219", "price": null}, {"label": "Ø273", "price": null}, {"label": "Ø323", "price": null}]}, {"name": "Collet_epais_inox316L", "category": "Tuyauterie", "items": [{"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}, {"label": "Ø139", "price": null}, {"label": "Ø168", "price": null}, {"label": "Ø219", "price": null}, {"label": "Ø273", "price": null}, {"label": "Ø323", "price": null}]}, {"name": "Tuyau_inox304L", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": 22.0}, {"label": "Ø25", "price": 23.0}, {"label": "Ø27", "price": 25.0}, {"label": "Ø34", "price": 30.0}, {"label": "Ø38", "price": 35.0}, {"label": "Ø42", "price": 38.0}, {"label": "Ø48", "price": 45.0}, {"label": "Ø51", "price": 48.0}, {"label": "Ø60", "price": 55.0}, {"label": "Ø63", "price": null}, {"label": "Ø76", "price": 70.0}, {"label": "Ø88,9", "price": 82.0}, {"label": "Ø104", "price": 120.0}, {"label": "Ø114", "price": 110.0}, {"label": "Ø139", "price": 135.0}, {"label": "Ø168", "price": null}, {"label": "Ø219", "price": null}, {"label": "Ø273", "price": null}, {"label": "Ø323", "price": null}]}, {"name": "Tuyau_etiré_inox304L", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}]}, {"name": "Tuyau_inox316L", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": 33.0}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø38", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø51", "price": null}, {"label": "Ø60", "price": 76.0}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}, {"label": "Ø139", "price": null}, {"label": "Ø168", "price": null}, {"label": "Ø219", "price": null}, {"label": "Ø273", "price": null}, {"label": "Ø323", "price": null}]}, {"name": "Tuyau_etiré_inox316L", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}]}, {"name": "Tuyau_PREPEINT", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": 26.0}, {"label": "Ø60", "price": 35.0}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": 80.0}, {"label": "Ø139", "price": null}, {"label": "Ø168", "price": null}, {"label": "Ø219", "price": null}, {"label": "Ø273", "price": null}, {"label": "Ø323", "price": null}]}, {"name": "Coude_inox304L_3D", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": 1.0}, {"label": "Ø25", "price": 2.8}, {"label": "Ø27", "price": 1.2}, {"label": "Ø34", "price": 1.25}, {"label": "Ø38", "price": 4.3}, {"label": "Ø42", "price": 1.6}, {"label": "Ø48", "price": null}, {"label": "Ø51", "price": 6.3}, {"label": "Ø60", "price": 2.1}, {"label": "Ø63", "price": null}, {"label": "Ø76", "price": 4.5}, {"label": "Ø88,9", "price": 5.0}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": 9.0}, {"label": "Ø139", "price": 17.0}, {"label": "Ø168", "price": null}, {"label": "Ø219", "price": null}, {"label": "Ø273", "price": null}, {"label": "Ø323", "price": null}]}, {"name": "Coude_inox316L_3D", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": 1.7}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø38", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø51", "price": null}, {"label": "Ø60", "price": 7.0}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}, {"label": "Ø139", "price": null}, {"label": "Ø168", "price": null}, {"label": "Ø219", "price": null}, {"label": "Ø273", "price": null}, {"label": "Ø323", "price": null}]}, {"name": "Coude_inox304L_5D", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}, {"label": "Ø139", "price": null}, {"label": "Ø168", "price": null}, {"label": "Ø219", "price": null}, {"label": "Ø273", "price": null}, {"label": "Ø323", "price": null}]}, {"name": "Coude_inox316L_5D", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø38", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø51", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}, {"label": "Ø139", "price": null}, {"label": "Ø168", "price": null}, {"label": "Ø219", "price": null}, {"label": "Ø273", "price": null}, {"label": "Ø323", "price": null}]}, {"name": "Coude_acier_3D", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": 6.0}, {"label": "Ø139", "price": null}, {"label": "Ø168", "price": null}, {"label": "Ø219", "price": null}, {"label": "Ø273", "price": null}, {"label": "Ø323", "price": null}]}, {"name": "Coude_acier_5D", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}, {"label": "Ø139", "price": null}, {"label": "Ø168", "price": null}, {"label": "Ø219", "price": null}, {"label": "Ø273", "price": null}, {"label": "Ø323", "price": null}]}, {"name": "T_inox304L", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": 3.0}, {"label": "Ø34", "price": null}, {"label": "Ø42", "price": 4.1}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": 20.0}, {"label": "Ø139", "price": null}, {"label": "Ø168", "price": null}, {"label": "Ø219", "price": null}, {"label": "Ø273", "price": null}, {"label": "Ø323", "price": null}]}, {"name": "T_inox316L", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": 3.6}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø38", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø51", "price": null}, {"label": "Ø60", "price": 6.5}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}, {"label": "Ø139", "price": null}, {"label": "Ø168", "price": null}, {"label": "Ø219", "price": null}, {"label": "Ø273", "price": null}, {"label": "Ø323", "price": null}]}, {"name": "T_prepeint", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}, {"label": "Ø139", "price": null}, {"label": "Ø168", "price": null}, {"label": "Ø219", "price": null}, {"label": "Ø273", "price": null}, {"label": "Ø323", "price": null}]}, {"name": "Réduction_inox304L", "category": "Tuyauterie", "items": [{"label": "27/42", "price": 1.61}, {"label": "27/60", "price": null}, {"label": "34/42", "price": 1.22}, {"label": "34/48", "price": null}, {"label": "34/60", "price": null}, {"label": "34/76", "price": 9.1}, {"label": "42/48", "price": 1.14}, {"label": "42/60", "price": null}, {"label": "42/76", "price": 6.01}, {"label": "42/88", "price": null}, {"label": "42/114", "price": null}, {"label": "48/88", "price": null}, {"label": "48/114", "price": null}, {"label": "60/76", "price": 2.3}, {"label": "60/88", "price": 5.57}, {"label": "60/114", "price": 7.14}, {"label": "60/139", "price": null}, {"label": "76/88", "price": 2.51}, {"label": "76/114", "price": null}, {"label": "76/139", "price": null}, {"label": "88/114", "price": 4.55}, {"label": "88/139", "price": null}, {"label": "88/168", "price": null}, {"label": "104/63", "price": 39.0}, {"label": "114/139", "price": null}, {"label": "114/168", "price": null}, {"label": "114/219", "price": null}, {"label": "139/168", "price": null}, {"label": "139/219", "price": null}, {"label": "168/219", "price": null}]}, {"name": "Réduction_inox316L", "category": "Tuyauterie", "items": [{"label": "27/42", "price": null}, {"label": "27/60", "price": null}, {"label": "34/42", "price": null}, {"label": "34/48", "price": null}, {"label": "34/60", "price": null}, {"label": "34/76", "price": null}, {"label": "42/48", "price": null}, {"label": "42/60", "price": null}, {"label": "42/76", "price": null}, {"label": "42/88", "price": null}, {"label": "42/114", "price": null}, {"label": "48/88", "price": null}, {"label": "48/114", "price": null}, {"label": "60/76", "price": null}, {"label": "60/88", "price": null}, {"label": "60/114", "price": null}, {"label": "60/139", "price": null}, {"label": "76/88", "price": null}, {"label": "76/114", "price": null}, {"label": "76/139", "price": null}, {"label": "88/114", "price": null}, {"label": "88/139", "price": null}, {"label": "88/168", "price": null}, {"label": "114/139", "price": null}, {"label": "114/168", "price": null}, {"label": "114/219", "price": null}, {"label": "139/168", "price": null}, {"label": "139/219", "price": null}, {"label": "168/219", "price": null}]}, {"name": "Fond_bombé_inox304L", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø38", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø51", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}, {"label": "Ø139", "price": 4.2}, {"label": "Ø168", "price": null}, {"label": "Ø219", "price": null}, {"label": "Ø273", "price": null}, {"label": "Ø323", "price": null}]}, {"name": "Fond_bombé_inox316L", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø38", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø51", "price": null}, {"label": "Ø60", "price": 2.0}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}, {"label": "Ø139", "price": null}, {"label": "Ø168", "price": null}, {"label": "Ø219", "price": null}, {"label": "Ø273", "price": null}, {"label": "Ø323", "price": null}]}, {"name": "Fond_bombé_T10", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}, {"label": "Ø139", "price": null}, {"label": "Ø168", "price": null}, {"label": "Ø219", "price": null}, {"label": "Ø273", "price": null}, {"label": "Ø323", "price": null}]}, {"name": "RUMF_galva", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}]}, {"name": "RUMF_inox316L", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": 5.5}, {"label": "Ø27", "price": 5.9}, {"label": "Ø34", "price": 8.0}, {"label": "Ø42", "price": 14.0}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}]}, {"name": "MAMELON_galva", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}]}, {"name": "MAMELON_inox", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}]}, {"name": "MAMELON_acier", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}]}, {"name": "MANCHON_acier", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}]}, {"name": "MANCHON_galva", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø25", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}]}, {"name": "Manchon_inox_316l", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø27", "price": 1.3}, {"label": "Ø34", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}]}, {"name": "Embout_fileté_inox316L", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": 1.0}, {"label": "Ø27", "price": 1.0}, {"label": "Ø34", "price": 1.3}, {"label": "Ø42", "price": 1.7}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": 3.2}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": 15.0}]}, {"name": "Embout_fileté_acier", "category": "Tuyauterie", "items": [{"label": "Ø13", "price": null}, {"label": "Ø17", "price": null}, {"label": "Ø21", "price": null}, {"label": "Ø27", "price": null}, {"label": "Ø34", "price": null}, {"label": "Ø42", "price": null}, {"label": "Ø48", "price": null}, {"label": "Ø60", "price": null}, {"label": "Ø76", "price": null}, {"label": "Ø88,9", "price": null}, {"label": "Ø104", "price": null}, {"label": "Ø114", "price": null}]}, {"name": "Tole_2000x1000_inox304l", "category": "Chaudronnerie", "items": [{"label": "1,5", "price": null}, {"label": "2", "price": null}, {"label": "3", "price": 175.0}, {"label": "4", "price": null}, {"label": "5", "price": 230.0}, {"label": "6", "price": null}, {"label": "8", "price": null}, {"label": "10", "price": null}]}, {"name": "Tole_2000x1000_inox316l", "category": "Chaudronnerie", "items": [{"label": "1,5", "price": null}, {"label": "2", "price": null}, {"label": "3", "price": null}, {"label": "4", "price": null}, {"label": "5", "price": null}, {"label": "6", "price": null}, {"label": "8", "price": null}, {"label": "10", "price": null}]}, {"name": "Tole_2000x1000_alu", "category": "Chaudronnerie", "items": [{"label": "1,5", "price": null}, {"label": "2", "price": null}, {"label": "3", "price": null}, {"label": "4", "price": null}, {"label": "5", "price": null}, {"label": "6", "price": null}, {"label": "8", "price": null}, {"label": "10", "price": null}]}, {"name": "tole_2000x1000_galva", "category": "Chaudronnerie", "items": [{"label": "1,5", "price": null}, {"label": "2", "price": null}, {"label": "3", "price": 50.0}, {"label": "4", "price": null}, {"label": "5", "price": null}, {"label": "6", "price": null}, {"label": "8", "price": null}, {"label": "10", "price": null}]}, {"name": "tole_2000x1000_acier", "category": "Chaudronnerie", "items": [{"label": "1,5", "price": null}, {"label": "2", "price": null}, {"label": "3", "price": 50.0}, {"label": "4", "price": null}, {"label": "5", "price": null}, {"label": "6", "price": 145.0}, {"label": "8", "price": 140.0}, {"label": "10", "price": 160.0}]}, {"name": "Tole_2500x1250_inox304l", "category": "Chaudronnerie", "items": [{"label": "1,5", "price": null}, {"label": "2", "price": null}, {"label": "3", "price": null}, {"label": "4", "price": null}, {"label": "5", "price": null}, {"label": "6", "price": null}, {"label": "8", "price": null}, {"label": "10", "price": null}]}, {"name": "Tole_2500x1250_inox316l", "category": "Chaudronnerie", "items": [{"label": "1,5", "price": 160.0}, {"label": "2", "price": null}, {"label": "3", "price": null}, {"label": "4", "price": null}, {"label": "5", "price": null}, {"label": "6", "price": null}, {"label": "8", "price": null}, {"label": "10", "price": null}]}, {"name": "Tole_2500x1250_alu", "category": "Chaudronnerie", "items": [{"label": "1,5", "price": null}, {"label": "2", "price": 75.0}, {"label": "3", "price": 115.0}, {"label": "4", "price": null}, {"label": "5", "price": null}, {"label": "6", "price": null}, {"label": "8", "price": null}, {"label": "10", "price": null}]}, {"name": "Tole_2500x1250_galva", "category": "Chaudronnerie", "items": [{"label": "1,5", "price": null}, {"label": "2", "price": null}, {"label": "3", "price": null}, {"label": "4", "price": null}, {"label": "5", "price": null}, {"label": "6", "price": null}, {"label": "8", "price": null}, {"label": "10", "price": null}]}, {"name": "Tole_2500x1250_acier", "category": "Chaudronnerie", "items": [{"label": "1,5", "price": null}, {"label": "2", "price": null}, {"label": "3", "price": null}, {"label": "4", "price": null}, {"label": "5", "price": 145.0}, {"label": "6", "price": null}, {"label": "8", "price": null}, {"label": "10", "price": null}]}, {"name": "Tole_3000x1500_inox304l", "category": "Supportage", "items": [{"label": "1,5", "price": null}, {"label": "2", "price": null}, {"label": "3", "price": null}, {"label": "4", "price": 410.0}, {"label": "5", "price": null}, {"label": "6", "price": null}, {"label": "8", "price": null}, {"label": "10", "price": null}]}, {"name": "Tole_3000x1500_inox316l", "category": "Supportage", "items": [{"label": "1,5", "price": null}, {"label": "2", "price": null}, {"label": "3", "price": null}, {"label": "4", "price": null}, {"label": "5", "price": null}, {"label": "6", "price": null}, {"label": "8", "price": null}, {"label": "10", "price": null}]}, {"name": "Tole_3000x1500_alu", "category": "Supportage", "items": [{"label": "1,5", "price": null}, {"label": "2", "price": null}, {"label": "3", "price": null}, {"label": "4", "price": null}, {"label": "5", "price": null}, {"label": "6", "price": null}, {"label": "8", "price": null}, {"label": "10", "price": null}]}, {"name": "Tole_3000x1500_galva", "category": "Supportage", "items": [{"label": "1,5", "price": null}, {"label": "2", "price": null}, {"label": "3", "price": null}, {"label": "4", "price": null}, {"label": "5", "price": null}, {"label": "6", "price": null}, {"label": "8", "price": null}, {"label": "10", "price": null}]}, {"name": "Tole_3000x1500_acier", "category": "Supportage", "items": [{"label": "1,5", "price": null}, {"label": "2", "price": null}, {"label": "3", "price": 110.0}, {"label": "4", "price": null}, {"label": "5", "price": null}, {"label": "6", "price": null}, {"label": "8", "price": null}, {"label": "10", "price": null}]}, {"name": "Tole_4000x2000_inox_304l", "category": "Supportage", "items": [{"label": "1,5", "price": null}, {"label": "2", "price": null}, {"label": "3", "price": null}, {"label": "4", "price": null}, {"label": "5", "price": null}, {"label": "6", "price": null}, {"label": "8", "price": null}, {"label": "10", "price": null}]}, {"name": "Tole_4000x2000_inox_316l", "category": "Supportage", "items": [{"label": "1,5", "price": null}, {"label": "2", "price": null}, {"label": "3", "price": null}, {"label": "4", "price": null}, {"label": "5", "price": null}, {"label": "6", "price": null}, {"label": "8", "price": null}, {"label": "10", "price": null}]}, {"name": "Tole_4000x2000_inox_304l", "category": "Supportage", "items": [{"label": "1,5", "price": null}, {"label": "2", "price": null}, {"label": "3", "price": null}, {"label": "4", "price": null}, {"label": "5", "price": null}, {"label": "6", "price": null}, {"label": "8", "price": null}, {"label": "10", "price": null}]}, {"name": "Tole_4000x2000_alu", "category": "Supportage", "items": [{"label": "1,5", "price": null}, {"label": "2", "price": null}, {"label": "3", "price": null}, {"label": "4", "price": null}, {"label": "5", "price": null}, {"label": "6", "price": null}, {"label": "8", "price": null}, {"label": "10", "price": null}]}, {"name": "Tole_4000x2000_acier", "category": "Location", "items": [{"label": "1,5", "price": null}, {"label": "2", "price": null}, {"label": "3", "price": null}, {"label": "4", "price": null}, {"label": "5", "price": 250.0}, {"label": "6", "price": null}, {"label": "8", "price": null}, {"label": "10", "price": null}]}, {"name": "Tole_damier2000x1000_alu", "category": "Location", "items": [{"label": "3/4", "price": null}, {"label": "5/7", "price": null}]}, {"name": "Tole_damier2500x1250_alu", "category": "Location", "items": [{"label": "3/4", "price": null}, {"label": "5/7", "price": null}]}, {"name": "Tole_damier3000x1500_alu", "category": "Location", "items": [{"label": "3/4", "price": null}, {"label": "5/7", "price": null}]}, {"name": "tole_larmée2000x1000_acier", "category": "Location", "items": [{"label": "3/4", "price": null}, {"label": "5/7", "price": null}, {"label": "10/12", "price": 180.0}]}, {"name": "tole_larmée2000x1000_inox_304l", "category": "Location", "items": [{"label": "3/4", "price": null}, {"label": "5/7", "price": null}]}, {"name": "Tube_serti_inox304L", "category": "Tuyauterie (sertie)", "items": [{"label": "Ø108 [304 02 075 108 2]", "price": null}, {"label": "Ø88.9 [304 02 075 88.9 2]", "price": null}, {"label": "Ø76 [304 02 075 76.1 2]", "price": null}, {"label": "Ø54 [304 020 075 54 1.5]", "price": null}, {"label": "Ø42 [304 02 075 42 1.5]", "price": null}, {"label": "Ø35 [304 02 075 35 1.5]", "price": null}, {"label": "Ø28 [304 02 075 35 1.5]", "price": null}, {"label": "Ø22 [304 02 075 22 1.2]", "price": null}, {"label": "Ø18 [304 02 075 18 1]", "price": null}, {"label": "Ø15 [304 02 075 15 1]", "price": null}]}, {"name": "Tube_serti_inox316L", "category": "Tuyauterie (sertie)", "items": [{"label": "Ø108 [317 02 075 108 2]", "price": null}, {"label": "Ø88.9 [317 02 075 88.9 2]", "price": null}, {"label": "Ø76 [317 02 075 76.1 2]", "price": null}, {"label": "Ø54 [317 020 075 54 1.5]", "price": null}, {"label": "Ø42 [317 02 075 42 1.5]", "price": null}, {"label": "Ø35 [317 02 075 35 1.5]", "price": null}, {"label": "Ø28 [317 02 075 35 1.5]", "price": null}, {"label": "Ø22 [317 02 075 22 1.2]", "price": null}, {"label": "Ø18 [317 02 075 18 1]", "price": null}, {"label": "Ø15 [317 02 075 15 1]", "price": null}]}, {"name": "Coude_serti_FF90", "category": "Tuyauterie (sertie)", "items": [{"label": "Ø108 [317 05 355 108]", "price": null}, {"label": "Ø88.9 [317 05 355 88.9]", "price": null}, {"label": "Ø76 [317 05 355 76]", "price": null}, {"label": "Ø54 [317 05 355 54]", "price": null}, {"label": "Ø42 [317 05 355 42]", "price": null}, {"label": "Ø35 [317 05 355 35]", "price": null}, {"label": "Ø28 [317 05 355 28]", "price": null}, {"label": "Ø22 [317 05 355 22]", "price": null}, {"label": "Ø18 [317 05 355 18]", "price": null}, {"label": "Ø15 [317 05 355 15]", "price": null}]}, {"name": "Coude_serti_FF45", "category": "Tuyauterie (sertie)", "items": [{"label": "Ø108 [317 05 358 108]", "price": null}, {"label": "Ø88.9 [317 05 358 88.9]", "price": null}, {"label": "Ø76 [317 05 358 76]", "price": null}, {"label": "Ø54 [317 05 358 54]", "price": null}, {"label": "Ø42 [317 05 358 42]", "price": null}, {"label": "Ø35 [317 05 358 35]", "price": null}, {"label": "Ø28 [317 05 358 28]", "price": null}, {"label": "Ø22 [317 05 358 22]", "price": null}, {"label": "Ø18 [317 05 358 22]", "price": null}, {"label": "Ø15 [317 05 358 15]", "price": null}]}, {"name": "Te_serti_egal", "category": "Tuyauterie (sertie)", "items": [{"label": "Ø108 [317 05 360 108]", "price": null}, {"label": "Ø88.9 [317 05 360 88.9]", "price": null}, {"label": "Ø76 [317 05 360 76]", "price": null}, {"label": "Ø54 [317 05 360 54]", "price": null}, {"label": "Ø42 [317 05 360 42]", "price": null}, {"label": "Ø35 [317 05 360 35]", "price": null}, {"label": "Ø28 [317 05 360 28]", "price": null}, {"label": "Ø22 [317 05 360 22]", "price": null}, {"label": "Ø18 [317 05 360 18]", "price": null}, {"label": "Ø15 [317 05 360 15]", "price": null}]}, {"name": "Te_serti_reduit", "category": "Tuyauterie (sertie)", "items": [{"label": "18/15 [317 05 361 18 15]", "price": null}, {"label": "22/15 [317 05 361 22 15]", "price": null}, {"label": "22/18 [317 05 361 22 18]", "price": null}, {"label": "28/15 [317 05 361 28 15]", "price": null}, {"label": "28/18 [317 05 361 28 18]", "price": null}, {"label": "28/22 [317 05 361 28 22]", "price": null}, {"label": "35/15 [317 05 361 35 15]", "price": null}, {"label": "35/18 [317 05 361 35 18]", "price": null}, {"label": "35/22 [317 05 361 35 22]", "price": null}, {"label": "35/28 [317 05 361 35 28]", "price": null}, {"label": "42/15 [317 05 361 42 15]", "price": null}, {"label": "42/18 [317 05 361 42 18]", "price": null}, {"label": "42/22 [317 05 361 42 22]", "price": null}, {"label": "42/28 [317 05 361 42 28]", "price": null}, {"label": "42/35 [317 05 361 42 35]", "price": null}, {"label": "54/15 [317 05 361 54 15]", "price": null}, {"label": "54/18 [317 05 361 54 18]", "price": null}, {"label": "54/22 [317 05 361 54 22]", "price": null}, {"label": "54/28 [317 05 361 54 28]", "price": null}, {"label": "54/35 [317 05 361 54 35]", "price": null}, {"label": "54/42 [317 05 361 54 42]", "price": null}, {"label": "76/22 [317 05 361 76.1 22]", "price": null}, {"label": "76/28 [317 05 361 76.1 28]", "price": null}, {"label": "76/35 [317 05 361 76.1 35]", "price": null}, {"label": "76/42 [317 05 361 76.1 42]", "price": null}, {"label": "76/54 [317 05 361 76.1 54]", "price": null}, {"label": "88/22 [317 05 361 88.9 22]", "price": null}, {"label": "88/28 [317 05 361 88.9 28]", "price": null}, {"label": "88/35 [317 05 361 88.9 35]", "price": null}, {"label": "88/42 [317 05 361 88.9 42]", "price": null}, {"label": "88/54 [317 05 361 88.9 54]", "price": null}, {"label": "88/76 [317 05 361 88.9 76.1]", "price": null}, {"label": "108/22 [317 05 361 108 22]", "price": null}, {"label": "108/28 [317 05 361 108 28]", "price": null}, {"label": "108/35 [317 05 361 108 35]", "price": null}, {"label": "108/42 [317 05 361 108 42]", "price": null}, {"label": "108/54 [317 05 361 108 54]", "price": null}, {"label": "108/76 [317 05 361 108 76.1]", "price": null}]}, {"name": "Manchon_serti", "category": "Tuyauterie (sertie)", "items": [{"label": "Ø108 [317 05 365 108]", "price": null}, {"label": "Ø88.9 [317 05 365 88.9]", "price": null}, {"label": "Ø76 [317 05 365 76]", "price": null}, {"label": "Ø54 [317 05 365 54]", "price": null}, {"label": "Ø42 [317 05 365 42]", "price": null}, {"label": "Ø35 [317 05 365 35]", "price": null}, {"label": "Ø28 [317 05 365 28]", "price": null}, {"label": "Ø22 [317 05 365 22]", "price": null}, {"label": "Ø18 [317 05 365 18]", "price": null}, {"label": "Ø15 [317 05 365 15]", "price": null}]}, {"name": "Mamelon_serti_FM", "category": "Tuyauterie (sertie)", "items": [{"label": "15 x 1/2\" [317 05 350 15 0.5]", "price": null}, {"label": "15 x 3/4\" [317 05 350 15 0.75]", "price": null}, {"label": "18 x 1/2\" [317 05 350 18 0.5]", "price": null}, {"label": "18 x 3/4\" [317 05 350 18 0.75]", "price": null}, {"label": "22 x 1/2\" [317 05 350 22 0.5]", "price": null}, {"label": "22 x 3/4\" [317 05 350 22 0.75]", "price": null}, {"label": "22 x 1\" [317 05 350 22 1]", "price": null}, {"label": "28 x 3/4\" [317 05 350 28 0.75]", "price": null}, {"label": "28 x 1\" [317 05 350 28 1]", "price": null}, {"label": "28 x 1 1/4\" [317 05 350 28 1.25]", "price": null}, {"label": "35 x 1\" [317 05 350 35 1]", "price": null}, {"label": "35 x 1 1/4\" [317 05 350 35 1.25]", "price": null}, {"label": "35 x 1 1/2\" [317 05 350 35 1.5]", "price": null}, {"label": "42 x 1 1/4\" [317 05 350 42 1.25]", "price": null}, {"label": "42 x 1 1/2\" [317 05 350 42 1.5]", "price": null}, {"label": "54 x 1 1/2\" [317 05 350 54 1.5]", "price": null}, {"label": "54 x 2\" [317 05 350 54 2]", "price": null}, {"label": "76,1 x 2 1/2\" [317 05 350 76.1 2.5]", "price": null}, {"label": "88,9 x 3\" [317 05 350 88.9 3]", "price": null}, {"label": "108 x 4\" [317 05 350 108 4]", "price": null}]}, {"name": "Reduction_serti_MF", "category": "Tuyauterie (sertie)", "items": [{"label": "18 x 15 [317 05 370 18 15]", "price": null}, {"label": "22 x 15 [317 05 370 22 15]", "price": null}, {"label": "22 x 18 [317 05 370 22 18]", "price": null}, {"label": "28 x 15 [317 05 370 28 15]", "price": null}, {"label": "28 x 18 [317 05 370 28 18]", "price": null}, {"label": "28 x 22 [317 05 370 28 22]", "price": null}, {"label": "35 x 15 [317 05 370 35 15]", "price": null}, {"label": "35 x 18 [317 05 370 35 18]", "price": null}, {"label": "35 x 22 [317 05 370 35 22]", "price": null}, {"label": "35 x 28 [317 05 370 35 28]", "price": null}, {"label": "42 x 15 [317 05 370 42 15]", "price": null}, {"label": "42 x 18 [317 05 370 42 18]", "price": null}, {"label": "42 x 22 [317 05 370 42 22]", "price": null}, {"label": "42 x 28 [317 05 370 42 28]", "price": null}, {"label": "42 x 35 [317 05 370 42 35]", "price": null}, {"label": "54 x 15 [317 05 370 54 15]", "price": null}, {"label": "54 x 18 [317 05 370 54 18]", "price": null}, {"label": "54 x 22 [317 05 370 54 22]", "price": null}, {"label": "54 x 28 [317 05 370 54 28]", "price": null}, {"label": "54 x 35 [317 05 370 54 35]", "price": null}, {"label": "54 x 42 [317 05 370 54 42]", "price": null}, {"label": "76,1 x 22 [317 05 370 76.1 22]", "price": null}, {"label": "76,1 x 28 [317 05 370 76.1 28]", "price": null}, {"label": "76,1 x 35 [317 05 370 76.1 35]", "price": null}, {"label": "76,1 x 42 [317 05 370 76.1 42]", "price": null}, {"label": "76,1 x 54 [317 05 370 76.1 54]", "price": null}, {"label": "88,9 x 42 [317 05 370 88.9 42]", "price": null}, {"label": "88,9 x 54 [317 05 370 88.9 54]", "price": null}]}, {"name": "Mamelon_serti_FF", "category": "Tuyauterie (sertie)", "items": [{"label": "15 x 1/2\" [317 05 351 15 0.5]", "price": null}, {"label": "15 x 3/4\" [317 05 351 15 0.75]", "price": null}, {"label": "18 x 1/2\" [317 05 351 18 0.5]", "price": null}, {"label": "18 x 3/4\" [317 05 351 18 0.75]", "price": null}, {"label": "22 x 1/2\" [317 05 351 22 0.5]", "price": null}, {"label": "22 x 3/4\" [317 05 351 22 0.75]", "price": null}, {"label": "22 x 1\" [317 05 351 22 1]", "price": null}, {"label": "28 x 3/4\" [317 05 351 28 0.75]", "price": null}, {"label": "28 x 1\" [317 05 351 28 1]", "price": null}, {"label": "28 x 1 1/4\" [317 05 351 28 1.25]", "price": null}, {"label": "35 x 1\" [317 05 351 35 1]", "price": null}, {"label": "35 x 1 1/4\" [317 05 351 35 1.25]", "price": null}, {"label": "35 x 1 1/2\" [317 05 351 35 1.5]", "price": null}, {"label": "42 x 1 1/4\" [317 05 351 42 1.25]", "price": null}, {"label": "42 x 1 1/2\" [317 05 351 42 1.5]", "price": null}, {"label": "54 x 1 1/2\" [317 05 351 54 1.5]", "price": null}, {"label": "54 x 2\" [317 05 351 54 2]", "price": null}, {"label": "76,1 x 2 1/2\" [317 05 351 76.1 2.5]", "price": null}, {"label": "88,9 x 3\" [317 05 351 88.9 3]", "price": null}]}, {"name": "Bride_tournante_serti", "category": "Tuyauterie (sertie)", "items": [{"label": "DN 50 - 54mm [317 05 397 54]", "price": null}, {"label": "DN 65 - 76,1mm [317 05 397 76.1]", "price": null}, {"label": "DN 80 - 88,9mm [317 05 397 88.9]", "price": null}, {"label": "DN 100 - 108mm [317 05 397 108]", "price": null}]}, {"name": "Bride_pleine_serti", "category": "Tuyauterie (sertie)", "items": [{"label": "DN 12 - 15mm [317 05 378 12 15]", "price": null}, {"label": "DN 15 - 18mm [317 05 378 15 18]", "price": null}, {"label": "DN 20 - 22mm [317 05 378 20 22]", "price": null}, {"label": "DN 25 - 28mm [317 05 378 25 28]", "price": null}, {"label": "DN 32 - 35mm [317 05 378 32 35]", "price": null}, {"label": "DN 40 - 42mm [317 05 378 40 42]", "price": null}, {"label": "DN 50 - 54mm [317 05 378 50 54]", "price": null}, {"label": "DN 65 - 76,1mm [317 05 378 65 76.1]", "price": null}, {"label": "DN 80 - 88,9mm [317 05 378 80 88.9]", "price": null}, {"label": "DN 100 - 108mm [317 05 378 100 108]", "price": null}]}, {"name": "Crosse_eveque_serti", "category": "Tuyauterie (sertie)", "items": [{"label": "Ø15 [317 05 382 15]", "price": null}, {"label": "Ø18 [317 05 382 18]", "price": null}, {"label": "Ø22 [317 05 382 22]", "price": null}, {"label": "Ø28 [317 05 382 28]", "price": null}]}, {"name": "Bouchon_femelle_serti", "category": "Tuyauterie (sertie)", "items": [{"label": "Ø15 [317 05 375 15]", "price": null}, {"label": "Ø18 [317 05 375 18]", "price": null}, {"label": "Ø22 [317 05 375 22]", "price": null}, {"label": "Ø28 [317 05 375 28]", "price": null}, {"label": "Ø35 [317 05 375 35]", "price": null}, {"label": "Ø42 [317 05 375 42]", "price": null}, {"label": "Ø54 [317 05 375 54]", "price": null}, {"label": "Ø76.1 [317 05 375 76.1]", "price": null}, {"label": "Ø88.9 [317 05 375 88.9]", "price": null}, {"label": "Ø108 [317 05 375 108]", "price": null}]}, {"name": "Te_mixte_femelle_serti", "category": "Tuyauterie (sertie)", "items": [{"label": "15 x 1/2\" [317 05 362 15 0.5]", "price": null}, {"label": "18 x 1/2\" [317 05 362 18 0.5]", "price": null}, {"label": "18 x 3/4\" [317 05 362 18 0.75]", "price": null}, {"label": "22 x 1/2\" [317 05 362 22 0.5]", "price": null}, {"label": "22 x 3/4\" [317 05 362 22 0.75]", "price": null}, {"label": "28 x 1/2\" [317 05 362 28 0.5]", "price": null}, {"label": "28 x 3/4\" [317 05 362 28 0.75]", "price": null}, {"label": "28 x 1\" [317 05 362 28 1]", "price": null}, {"label": "35 x 1/2\" [317 05 362 35 0.5]", "price": null}, {"label": "35 x 3/4\" [317 05 362 35 0.75]", "price": null}, {"label": "35 x 1\" [317 05 362 35 1]", "price": null}, {"label": "35 x 1 1/4\" [317 05 362 35 1.25]", "price": null}, {"label": "42 x 1/2\" [317 05 362 42 0.5]", "price": null}, {"label": "42 x 3/4\" [317 05 362 42 0.75]", "price": null}, {"label": "42 x 1\" [317 05 362 42 1]", "price": null}, {"label": "42 x 1 1/2\" [317 05 362 42 1.5]", "price": null}, {"label": "54 x 1/2\" [317 05 362 54 0.5]", "price": null}, {"label": "54 x 3/4\" [317 05 362 54 0.75]", "price": null}, {"label": "54 x 1\" [317 05 362 54 1]", "price": null}, {"label": "54 x 2\" [317 05 362 54 2]", "price": null}, {"label": "76,1 x 3/4\" [317 05 362 76.1 0.75]", "price": null}, {"label": "76,1 x 2\" [317 05 362 76.1 2]", "price": null}, {"label": "88,9 x 3/4\" [317 05 362 88.9 0.75]", "price": null}, {"label": "88,9 x 2\" [317 05 362 88.9 2]", "price": null}, {"label": "108 x 3/4\" [317 05 362 108 0.75]", "price": null}, {"label": "108 x 2\" [317 05 362 108 2]", "price": null}]}, {"name": "Raccord_union_serti", "category": "Tuyauterie (sertie)", "items": [{"label": "15 x 1/2\" [317 05 354 15 0.5]", "price": null}, {"label": "15 x 3/4\" [317 05 354 15 0.75]", "price": null}, {"label": "18 x 1/2\" [317 05 354 18 0.5]", "price": null}, {"label": "18 x 3/4\" [317 05 354 18 0.75]", "price": null}, {"label": "22 x 3/4\" [317 05 354 22 0.75]", "price": null}, {"label": "22 x 1\" [317 05 354 22 1]", "price": null}, {"label": "28 x 1\" [317 05 354 28 1]", "price": null}, {"label": "28 x 1 1/4\" [317 05 354 28 1.25]", "price": null}, {"label": "35 x 1 1/4\" [317 05 354 35 1.25]", "price": null}, {"label": "42 x 1 1/2\" [317 05 354 42 1.5]", "price": null}, {"label": "54 x 2\" [317 05 354 54 2]", "price": null}]}];
+const CLIENTS = ["Alpine", "Airelior", "Atemax", "Airflux", "Barry Callebault", "Clauger", "Scierie Lefebvre", "Atelier du gout", "Berry Plastic", "Davigel", "Mgsotech", "Marc", "Berneuil Thermie", "Nexira", "Nor Pain", "Quibel", "Lepicard", "Labeyrie", "Pochet du Courval", "Eurial", "Silgan", "Delifrance", "Sas Lucas", "Eiffage", "Soleval", "Marc Brest", "Johnson Control", "Moulinot", "AB-Solu", "Pom alliance", "Normandy coating", "Lunor", "Nestlé", "Keraglass"];
+
+const LOGO_SLVS = "data:image/jpeg;base64,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";
+
+const CATEGORIES = [...new Set(MATERIALS.map(m => m.category))];
+
+const DEFAULT_RATES = { heures: 55, samedi: 75, etude: 60 };
+const DEFAULT_MARGINS = { sousTraitants: 1.2, fournituresDiverses: 1.35, consommables: 1.35, fournitures: 1.35 };
+
+function euros(n) {
+  if (n === null || n === undefined || isNaN(n)) return "—";
+  return n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " \u20ac";
+}
+
+function DimensionTotal({ value }) {
+  return (
+    <div className="flex items-center w-full select-none">
+      <div className="flex-1 flex items-center">
+        <div className="w-2 h-2 border-l-2 border-t-2 border-[#FF6A13] rotate-[-45deg] -mr-1" />
+        <div className="flex-1 h-px bg-[#FF6A13]" />
+      </div>
+      <div className="px-4 py-1 mx-1 bg-[#0F1315] border border-[#FF6A13]/50">
+        <span className="font-mono text-2xl font-bold text-[#FF6A13] tracking-tight">{euros(value)}</span>
+      </div>
+      <div className="flex-1 flex items-center">
+        <div className="flex-1 h-px bg-[#FF6A13]" />
+        <div className="w-2 h-2 border-r-2 border-b-2 border-[#FF6A13] rotate-[-45deg] -ml-1" />
+      </div>
+    </div>
+  );
+}
+
+function TickCorners() {
+  return (
+    <>
+      <span className="absolute -top-px -left-px w-2 h-2 border-t border-l border-[#5B8BA6]" />
+      <span className="absolute -top-px -right-px w-2 h-2 border-t border-r border-[#5B8BA6]" />
+      <span className="absolute -bottom-px -left-px w-2 h-2 border-b border-l border-[#5B8BA6]" />
+      <span className="absolute -bottom-px -right-px w-2 h-2 border-b border-r border-[#5B8BA6]" />
+    </>
+  );
+}
+
+function Panel({ eyebrow, title, children, className = "" }) {
+  return (
+    <section className={`relative border border-[#333F46] bg-[#1B2226] p-4 ${className}`}>
+      <TickCorners />
+      <div className="mb-3">
+        {eyebrow && <div className="text-[10px] tracking-[0.2em] text-[#5B8BA6] font-mono uppercase">{eyebrow}</div>}
+        {title && <h2 className="text-lg font-black uppercase tracking-tight text-[#ECEAE2]">{title}</h2>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function NumField({ label, unit, value, onChange, rate }) {
+  const sub = rate ? (Number(value) || 0) * rate : null;
+  return (
+    <div className="flex items-center justify-between gap-3 py-2 border-b border-[#2A333A] last:border-0">
+      <div className="flex-1 min-w-0">
+        <div className="text-sm text-[#ECEAE2]">{label}</div>
+        {rate && <div className="text-[11px] font-mono text-[#8A9199]">{rate} \u20ac/h</div>}
+      </div>
+      <input
+        type="number"
+        inputMode="decimal"
+        min="0"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-20 bg-[#0F1315] border border-[#333F46] text-[#ECEAE2] font-mono text-right px-2 py-2 text-sm focus:outline-none focus:border-[#5B8BA6]"
+        placeholder="0"
+      />
+      {rate && (
+        <div className="w-24 text-right font-mono text-sm text-[#5B8BA6]">{euros(sub)}</div>
+      )}
+    </div>
+  );
+}
+
+function MiniField({ label, value, onChange, suffix }) {
+  return (
+    <div className="flex items-center justify-between gap-3 py-2 border-b border-[#2A333A] last:border-0">
+      <div className="text-sm text-[#ECEAE2]">{label}</div>
+      <div className="flex items-center gap-1">
+        <input
+          type="number"
+          inputMode="decimal"
+          step="0.01"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-20 bg-[#0F1315] border border-[#333F46] text-[#ECEAE2] font-mono text-right px-2 py-2 text-sm focus:outline-none focus:border-[#FF6A13]"
+        />
+        <span className="text-[11px] font-mono text-[#8A9199] w-6">{suffix}</span>
+      </div>
+    </div>
+  );
+}
+
+function Select({ value, onChange, options, placeholder }) {
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full appearance-none bg-[#0F1315] border border-[#333F46] text-[#ECEAE2] px-3 py-3 text-sm focus:outline-none focus:border-[#5B8BA6]"
+      >
+        <option value="">{placeholder}</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8A9199] pointer-events-none" />
+    </div>
+  );
+}
+
+function DevisApp() {
+  const [clientsList, setClientsList] = useState(CLIENTS);
+  const [client, setClient] = useState("");
+  const [addingClient, setAddingClient] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+  const [chantier, setChantier] = useState("");
+  const [notes, setNotes] = useState("");
+  const [mode, setMode] = useState("direct");
+  const [donneurOrdre, setDonneurOrdre] = useState("");
+
+  const [heures, setHeures] = useState("");
+  const [heuresSamedi, setHeuresSamedi] = useState("");
+  const [etude, setEtude] = useState("");
+
+  const [showReglages, setShowReglages] = useState(false);
+  const [rates, setRates] = useState(DEFAULT_RATES);
+  const [margins, setMargins] = useState(DEFAULT_MARGINS);
+
+  function updateRate(key, val) {
+    setRates((r) => ({ ...r, [key]: val === "" ? "" : Number(val) }));
+  }
+  function updateMargin(key, val) {
+    setMargins((m) => ({ ...m, [key]: val === "" ? "" : Number(val) }));
+  }
+
+  const [category, setCategory] = useState("");
+  const [materialName, setMaterialName] = useState("");
+  const [itemIdx, setItemIdx] = useState("");
+  const [qty, setQty] = useState("");
+  const [customPU, setCustomPU] = useState("");
+
+  const [lignes, setLignes] = useState([]);
+
+  const [sousTraitants, setSousTraitants] = useState("");
+  const [fournituresDiverses, setFournituresDiverses] = useState("");
+  const [consommables, setConsommables] = useState("");
+
+  const [listening, setListening] = useState(false);
+  const [voiceText, setVoiceText] = useState("");
+  const recRef = useRef(null);
+
+  const [texteDevis, setTexteDevis] = useState("");
+  const [listeningDesc, setListeningDesc] = useState(false);
+  const [voiceErrorDesc, setVoiceErrorDesc] = useState("");
+  const recDescRef = useRef(null);
+
+  const materialsInCategory = useMemo(
+    () => MATERIALS.filter((m) => m.category === category),
+    [category]
+  );
+  const currentMaterial = useMemo(
+    () => materialsInCategory.find((m) => m.name === materialName),
+    [materialsInCategory, materialName]
+  );
+  const currentItem = currentMaterial && itemIdx !== "" ? currentMaterial.items[Number(itemIdx)] : null;
+
+  const effectivePU = customPU !== "" ? Number(customPU) : currentItem?.price ?? null;
+
+  function addLigne() {
+    if (!currentMaterial || itemIdx === "" || !qty) return;
+    setLignes((ls) => [
+      ...ls,
+      {
+        id: Date.now(),
+        materiau: currentMaterial.name,
+        dim: currentItem.label,
+        qty: Number(qty),
+        pu: effectivePU ?? 0,
+      },
+    ]);
+    setItemIdx("");
+    setQty("");
+    setCustomPU("");
+  }
+
+  function addClient() {
+    const name = newClientName.trim();
+    if (!name) return;
+    if (!clientsList.includes(name)) setClientsList((cs) => [...cs, name]);
+    setClient(name);
+    setNewClientName("");
+    setAddingClient(false);
+  }
+
+  function removeLigne(id) {
+    setLignes((ls) => ls.filter((l) => l.id !== id));
+  }
+
+  const totalMainOeuvre =
+    (Number(heures) || 0) * (Number(rates.heures) || 0) +
+    (Number(heuresSamedi) || 0) * (Number(rates.samedi) || 0) +
+    (Number(etude) || 0) * (Number(rates.etude) || 0);
+
+  const totalMatiere = lignes.reduce((s, l) => s + l.qty * l.pu, 0);
+
+  const totalSousTraitants = (Number(sousTraitants) || 0) * (Number(margins.sousTraitants) || 0);
+  const totalFournituresDiverses = (Number(fournituresDiverses) || 0) * (Number(margins.fournituresDiverses) || 0);
+  const totalConsommables = (Number(consommables) || 0) * (Number(margins.consommables) || 0);
+  const totalFournitures = totalMatiere * (Number(margins.fournitures) || 0);
+
+  const grandTotal =
+    totalMainOeuvre + totalSousTraitants + totalFournituresDiverses + totalConsommables + totalFournitures;
+
+  function voiceErrorMessage(code) {
+    if (code === "not-allowed" || code === "service-not-allowed")
+      return "Micro refuse ou non accessible ici. Autorise le micro dans les reglages du navigateur, ou teste hors de cet apercu.";
+    if (code === "no-speech") return "Rien entendu, reessaie.";
+    if (code === "audio-capture") return "Aucun micro detecte sur cet appareil.";
+    if (code === "network") return "Connexion reseau necessaire pour la dictee.";
+    return `Micro indisponible (${code || "erreur inconnue"}). Essaie hors de cet apercu.`;
+  }
+
+  function startVoice() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      setVoiceText("Reconnaissance vocale non disponible sur ce navigateur.");
+      return;
+    }
+    const rec = new SR();
+    rec.lang = "fr-FR";
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    rec.onresult = (e) => {
+      const transcript = e.results[0][0].transcript;
+      setVoiceText(transcript);
+      applyVoiceGuess(transcript);
+    };
+    rec.onend = () => setListening(false);
+    rec.onerror = (e) => {
+      setListening(false);
+      setVoiceText(voiceErrorMessage(e.error));
+    };
+    recRef.current = rec;
+    try {
+      rec.start();
+      setListening(true);
+    } catch (err) {
+      setVoiceText(voiceErrorMessage(err?.message));
+      setListening(false);
+    }
+  }
+
+  function stopVoice() {
+    recRef.current?.stop();
+    setListening(false);
+  }
+
+  function startVoiceDesc() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      setTexteDevis((t) => t);
+      setVoiceErrorDesc("Reconnaissance vocale non disponible sur ce navigateur.");
+      return;
+    }
+    const rec = new SR();
+    rec.lang = "fr-FR";
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    rec.onresult = (e) => {
+      const transcript = e.results[0][0].transcript;
+      setTexteDevis((t) => (t ? t.trim() + " " + transcript : transcript));
+      setVoiceErrorDesc("");
+    };
+    rec.onend = () => setListeningDesc(false);
+    rec.onerror = (e) => {
+      setListeningDesc(false);
+      setVoiceErrorDesc(voiceErrorMessage(e.error));
+    };
+    recDescRef.current = rec;
+    try {
+      rec.start();
+      setListeningDesc(true);
+    } catch (err) {
+      setVoiceErrorDesc(voiceErrorMessage(err?.message));
+      setListeningDesc(false);
+    }
+  }
+
+  function stopVoiceDesc() {
+    recDescRef.current?.stop();
+    setListeningDesc(false);
+  }
+
+  function applyVoiceGuess(text) {
+    const t = text.toLowerCase();
+    let foundMat = null;
+    for (const m of MATERIALS) {
+      const key = m.name.toLowerCase().replace(/_/g, " ");
+      if (key.split(" ").some((w) => w.length > 3 && t.includes(w))) {
+        foundMat = m;
+        break;
+      }
+    }
+    if (foundMat) {
+      setCategory(foundMat.category);
+      setMaterialName(foundMat.name);
+      const numMatch = t.match(/(\\d+([.,]\\d+)?)/);
+      if (numMatch && foundMat.items.length) {
+        const target = parseFloat(numMatch[1].replace(",", "."));
+        let bestIdx = 0;
+        let bestDiff = Infinity;
+        foundMat.items.forEach((it, idx) => {
+          const n = parseFloat((it.label.match(/[\\d.]+/) || [""])[0]);
+          if (!isNaN(n)) {
+            const diff = Math.abs(n - target);
+            if (diff < bestDiff) {
+              bestDiff = diff;
+              bestIdx = idx;
+            }
+          }
+        });
+        setItemIdx(String(bestIdx));
+      }
+    }
+    const qtyMatch = t.match(/(\\d+)\\s*(m\\u00e8tres|metres|pi\\u00e8ces|unit\\u00e9s)/);
+    if (qtyMatch) setQty(qtyMatch[1]);
+  }
+
+  function exportTexte() {
+    const lignesTxt = lignes
+      .map((l) => `  - ${l.materiau} ${l.dim} \u2014 qte ${l.qty} \u00d7 ${euros(l.pu)} = ${euros(l.qty * l.pu)}`)
+      .join("\n");
+    const txt = `DEVIS\nClient: ${client || "-"}\nChantier: ${chantier || "-"}\nMode: ${mode === "direct" ? "Direct" : "Sous-traitance pour " + (donneurOrdre || "-")}\n${texteDevis ? "\n" + texteDevis + "\n" : ""}\nMAIN D'OEUVRE\n  Heures: ${heures || 0} x ${rates.heures}\u20ac\n  Heures samedi: ${heuresSamedi || 0} x ${rates.samedi}\u20ac\n  Etude: ${etude || 0} x ${rates.etude}\u20ac\n  Sous-total: ${euros(totalMainOeuvre)}\n\nTRAVAUX\n${lignesTxt || "  (aucune ligne)"}\n  Sous-total matiere: ${euros(totalMatiere)}\n${notes ? "\nNOTES\n" + notes + "\n" : ""}\nTOTAL: ${euros(grandTotal)}\n`;
+    const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `devis_${(client || "client").replace(/\\s+/g, "_")}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <div className="min-h-screen bg-[#14181B] text-[#ECEAE2] pb-32">
+      <header className="print:hidden border-b border-[#333F46] bg-[#0F1315] px-4 py-4 sticky top-0 z-10">
+        <div className="flex items-center gap-2">
+          <Wrench className="w-5 h-5 text-[#FF6A13]" />
+          <div className="text-[10px] tracking-[0.25em] text-[#5B8BA6] font-mono uppercase">
+            Atelier Tuyauterie / Chaudronnerie
+          </div>
+        </div>
+        <h1 className="text-2xl font-black uppercase tracking-tight mt-1">Carnet de devis</h1>
+      </header>
+
+      <main className="print:hidden px-4 py-4 space-y-4 max-w-xl mx-auto">
+        <Panel eyebrow="Cartouche" title="Chantier">
+          <div className="space-y-3">
+            <div>
+              <label className="text-[11px] font-mono text-[#8A9199] uppercase">Client</label>
+              {!addingClient ? (
+                <Select
+                  value={client}
+                  onChange={(v) => (v === "__new__" ? setAddingClient(true) : setClient(v))}
+                  placeholder="Choisir un client"
+                  options={[
+                    ...clientsList.map((c) => ({ value: c, label: c })),
+                    { value: "__new__", label: "+ Ajouter un client" },
+                  ]}
+                />
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    autoFocus
+                    value={newClientName}
+                    onChange={(e) => setNewClientName(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && addClient()}
+                    placeholder="Nom du nouveau client"
+                    className="flex-1 bg-[#0F1315] border border-[#333F46] text-[#ECEAE2] px-3 py-3 text-sm focus:outline-none focus:border-[#5B8BA6]"
+                  />
+                  <button
+                    onClick={addClient}
+                    className="px-3 bg-[#FF6A13] text-[#0F1315]"
+                    title="Ajouter"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => { setAddingClient(false); setNewClientName(""); }}
+                    className="px-3 border border-[#333F46] text-[#8A9199]"
+                    title="Annuler"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="text-[11px] font-mono text-[#8A9199] uppercase">Chantier / Site</label>
+              <input
+                value={chantier}
+                onChange={(e) => setChantier(e.target.value)}
+                placeholder="ex: Dieppe, cabines mastics"
+                className="w-full bg-[#0F1315] border border-[#333F46] text-[#ECEAE2] px-3 py-3 text-sm focus:outline-none focus:border-[#5B8BA6]"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setMode("direct")}
+                className={`flex-1 py-2 text-xs font-mono uppercase border ${mode === "direct" ? "bg-[#5B8BA6] border-[#5B8BA6] text-[#0F1315]" : "border-[#333F46] text-[#8A9199]"}`}
+              >
+                Direct
+              </button>
+              <button
+                onClick={() => setMode("sous-traitance")}
+                className={`flex-1 py-2 text-xs font-mono uppercase border ${mode === "sous-traitance" ? "bg-[#5B8BA6] border-[#5B8BA6] text-[#0F1315]" : "border-[#333F46] text-[#8A9199]"}`}
+              >
+                Sous-traitance
+              </button>
+            </div>
+            {mode === "sous-traitance" && (
+              <input
+                value={donneurOrdre}
+                onChange={(e) => setDonneurOrdre(e.target.value)}
+                placeholder="Donneur d'ordre (ex: EPI Europe)"
+                className="w-full bg-[#0F1315] border border-[#333F46] text-[#ECEAE2] px-3 py-3 text-sm focus:outline-none focus:border-[#5B8BA6]"
+              />
+            )}
+          </div>
+        </Panel>
+
+        <button
+          onClick={() => setShowReglages((s) => !s)}
+          className="w-full flex items-center justify-center gap-2 py-2 text-[11px] font-mono uppercase tracking-wide text-[#8A9199] border border-dashed border-[#333F46]"
+        >
+          {showReglages ? <X className="w-3.5 h-3.5" /> : <Settings className="w-3.5 h-3.5" />}
+          {showReglages ? "Fermer les reglages" : "Tarifs horaires & marges"}
+        </button>
+
+        {showReglages && (
+          <Panel eyebrow="Reglages" title="Tarifs & marges">
+            <div className="text-[11px] font-mono text-[#8A9199] uppercase mb-1">Taux horaires</div>
+            <MiniField label="Heures" value={rates.heures} onChange={(v) => updateRate("heures", v)} suffix="\u20ac/h" />
+            <MiniField label="Heures samedi" value={rates.samedi} onChange={(v) => updateRate("samedi", v)} suffix="\u20ac/h" />
+            <MiniField label="Etude" value={rates.etude} onChange={(v) => updateRate("etude", v)} suffix="\u20ac/h" />
+            <div className="text-[11px] font-mono text-[#8A9199] uppercase mb-1 mt-3">Marges</div>
+            <MiniField label="Sous-traitants" value={margins.sousTraitants} onChange={(v) => updateMargin("sousTraitants", v)} suffix="\u00d7" />
+            <MiniField label="Fournitures diverses" value={margins.fournituresDiverses} onChange={(v) => updateMargin("fournituresDiverses", v)} suffix="\u00d7" />
+            <MiniField label="Consommables" value={margins.consommables} onChange={(v) => updateMargin("consommables", v)} suffix="\u00d7" />
+            <MiniField label="Fournitures (matiere)" value={margins.fournitures} onChange={(v) => updateMargin("fournitures", v)} suffix="\u00d7" />
+          </Panel>
+        )}
+
+        <Panel eyebrow="Poste 1" title="Main d'oeuvre">
+          <NumField label="Heures" value={heures} onChange={setHeures} rate={rates.heures} />
+          <NumField label="Heures samedi" value={heuresSamedi} onChange={setHeuresSamedi} rate={rates.samedi} />
+          <NumField label="Etude" value={etude} onChange={setEtude} rate={rates.etude} />
+          <div className="flex justify-between pt-2 mt-1 border-t border-[#2A333A]">
+            <span className="text-xs font-mono uppercase text-[#8A9199]">Sous-total</span>
+            <span className="font-mono text-sm text-[#ECEAE2]">{euros(totalMainOeuvre)}</span>
+          </div>
+        </Panel>
+
+        <Panel eyebrow="Poste 2" title="Texte du devis">
+          <div className="space-y-2">
+            <button
+              onClick={listeningDesc ? stopVoiceDesc : startVoiceDesc}
+              className={`w-full flex items-center justify-center gap-2 py-2.5 text-xs font-mono uppercase border ${listeningDesc ? "bg-[#FF6A13] border-[#FF6A13] text-[#0F1315]" : "border-[#5B8BA6] text-[#5B8BA6]"}`}
+            >
+              {listeningDesc ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              {listeningDesc ? "Ecoute..." : "Dicter le texte"}
+            </button>
+            {voiceErrorDesc && (
+              <div className="text-[11px] font-mono text-[#FF6A13] px-1">{voiceErrorDesc}</div>
+            )}
+            <div className="text-[10px] font-mono text-[#4a5158] px-1">
+              Necessite l'autorisation du micro dans le navigateur (peut ne pas fonctionner dans cet apercu integre).
+            </div>
+            <textarea
+              value={texteDevis}
+              onChange={(e) => setTexteDevis(e.target.value)}
+              placeholder="Description du chantier / des travaux a realiser..."
+              rows={5}
+              className="w-full bg-[#0F1315] border border-[#333F46] text-[#ECEAE2] px-3 py-2 text-sm focus:outline-none focus:border-[#5B8BA6] resize-none"
+            />
+          </div>
+        </Panel>
+
+        <Panel eyebrow="Poste 3" title="Travaux">
+          <div className="space-y-2 mb-3">
+            <button
+              onClick={listening ? stopVoice : startVoice}
+              className={`w-full flex items-center justify-center gap-2 py-2.5 text-xs font-mono uppercase border ${listening ? "bg-[#FF6A13] border-[#FF6A13] text-[#0F1315]" : "border-[#5B8BA6] text-[#5B8BA6]"}`}
+            >
+              {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              {listening ? "Ecoute..." : "Dicter une ligne"}
+            </button>
+            {voiceText && (
+              <div className="text-[11px] font-mono text-[#8A9199] italic px-1">"{voiceText}"</div>
+            )}
+            <div className="text-[10px] font-mono text-[#4a5158] px-1">
+              Necessite l'autorisation du micro dans le navigateur (peut ne pas fonctionner dans cet apercu integre).
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Select
+              value={category}
+              onChange={(v) => { setCategory(v); setMaterialName(""); setItemIdx(""); }}
+              placeholder="Categorie"
+              options={CATEGORIES.map((c) => ({ value: c, label: c }))}
+            />
+            {category && (
+              <Select
+                value={materialName}
+                onChange={(v) => { setMaterialName(v); setItemIdx(""); }}
+                placeholder="Materiel"
+                options={materialsInCategory.map((m) => ({ value: m.name, label: m.name.replace(/_/g, " ") }))}
+              />
+            )}
+            {currentMaterial && (
+              <Select
+                value={itemIdx}
+                onChange={setItemIdx}
+                placeholder="Diametre / reference"
+                options={currentMaterial.items.map((it, idx) => ({
+                  value: String(idx),
+                  label: `${it.label}${it.price !== null ? "  \u2014 " + euros(it.price) : "  \u2014 prix a definir"}`,
+                }))}
+              />
+            )}
+            {currentItem && (
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] font-mono text-[#8A9199] uppercase">Quantite</label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={qty}
+                    onChange={(e) => setQty(e.target.value)}
+                    placeholder="0"
+                    className="w-full bg-[#0F1315] border border-[#333F46] text-[#ECEAE2] font-mono px-3 py-2.5 text-sm focus:outline-none focus:border-[#5B8BA6]"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-mono text-[#8A9199] uppercase">P.U. (\u20ac)</label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={customPU}
+                    onChange={(e) => setCustomPU(e.target.value)}
+                    placeholder={currentItem.price !== null ? String(currentItem.price) : "0"}
+                    className="w-full bg-[#0F1315] border border-[#333F46] text-[#ECEAE2] font-mono px-3 py-2.5 text-sm focus:outline-none focus:border-[#5B8BA6]"
+                  />
+                </div>
+              </div>
+            )}
+            <button
+              onClick={addLigne}
+              disabled={!currentItem || !qty}
+              className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-mono uppercase bg-[#FF6A13] disabled:bg-[#333F46] disabled:text-[#8A9199] text-[#0F1315] font-bold"
+            >
+              <Plus className="w-4 h-4" /> Ajouter la ligne
+            </button>
+          </div>
+
+          {lignes.length > 0 && (
+            <div className="mt-4 border-t border-[#2A333A] pt-3 space-y-2">
+              {lignes.map((l) => (
+                <div key={l.id} className="flex items-center justify-between gap-2 text-xs bg-[#0F1315] px-3 py-2 border border-[#2A333A]">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[#ECEAE2] truncate">{l.materiau.replace(/_/g, " ")}</div>
+                    <div className="font-mono text-[#8A9199] truncate">{l.dim} \u00d7 {l.qty}</div>
+                  </div>
+                  <div className="font-mono text-[#5B8BA6] whitespace-nowrap">{euros(l.qty * l.pu)}</div>
+                  <button onClick={() => removeLigne(l.id)} className="text-[#8A9199] hover:text-[#FF6A13]">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+              <div className="flex justify-between pt-2 border-t border-[#2A333A]">
+                <span className="text-xs font-mono uppercase text-[#8A9199]">Total matiere</span>
+                <span className="font-mono text-sm text-[#ECEAE2]">{euros(totalMatiere)}</span>
+              </div>
+            </div>
+          )}
+        </Panel>
+
+        <Panel eyebrow="Poste 4" title="Sous-traitants & fournitures">
+          <NumField label={`Sous-traitants (\u00d7 ${margins.sousTraitants})`} value={sousTraitants} onChange={setSousTraitants} />
+          <NumField label={`Fournitures diverses (\u00d7 ${margins.fournituresDiverses})`} value={fournituresDiverses} onChange={setFournituresDiverses} />
+          <NumField label={`Consommables (\u00d7 ${margins.consommables})`} value={consommables} onChange={setConsommables} />
+          <div className="flex items-center justify-between py-2">
+            <div className="text-sm text-[#ECEAE2]">{`Fournitures (matiere \u00d7 ${margins.fournitures})`}</div>
+            <div className="w-24 text-right font-mono text-sm text-[#5B8BA6]">{euros(totalFournitures)}</div>
+          </div>
+        </Panel>
+
+        <Panel eyebrow="Poste 5" title="Notes & remarques">
+          <div className="flex items-start gap-2">
+            <StickyNote className="w-4 h-4 text-[#8A9199] mt-2 shrink-0" />
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Conditions particulieres, delais, acces chantier, validite du devis..."
+              rows={4}
+              className="w-full bg-[#0F1315] border border-[#333F46] text-[#ECEAE2] px-3 py-2 text-sm focus:outline-none focus:border-[#5B8BA6] resize-none"
+            />
+          </div>
+        </Panel>
+
+        <div className="grid grid-cols-3 gap-2 pt-2">
+          <button
+            onClick={exportTexte}
+            className="flex items-center justify-center gap-2 py-3 text-xs font-mono uppercase border border-[#5B8BA6] text-[#5B8BA6]"
+          >
+            <FileDown className="w-4 h-4" /> Texte
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="flex items-center justify-center gap-2 py-3 text-xs font-mono uppercase bg-[#FF6A13] text-[#0F1315] font-bold"
+          >
+            <Printer className="w-4 h-4" /> PDF
+          </button>
+          <button
+            disabled
+            title="Connexion OneDrive a activer prochainement"
+            className="flex items-center justify-center gap-2 py-3 text-xs font-mono uppercase border border-[#333F46] text-[#4a5158] cursor-not-allowed"
+          >
+            <Cloud className="w-4 h-4" /> OneDrive
+          </button>
+        </div>
+      </main>
+
+      {/* Version imprimable - visible uniquement a l'impression / export PDF */}
+      <div className="hidden print:block bg-white text-black p-8 font-sans">
+        <div className="flex items-start justify-between border-b-2 border-black pb-4 mb-6">
+          <img src={LOGO_SLVS} alt="Logo SLVS" className="h-20 w-auto object-contain" />
+          <div className="text-right">
+            <h1 className="text-2xl font-black uppercase">Devis</h1>
+            <div className="text-sm text-gray-600">{new Date().toLocaleDateString("fr-FR")}</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
+          <div>
+            <div className="text-gray-500 uppercase text-xs">Client</div>
+            <div className="font-bold">{client || "-"}</div>
+          </div>
+          <div>
+            <div className="text-gray-500 uppercase text-xs">Chantier</div>
+            <div className="font-bold">{chantier || "-"}</div>
+          </div>
+          <div>
+            <div className="text-gray-500 uppercase text-xs">Mode</div>
+            <div>{mode === "direct" ? "Direct" : `Sous-traitance pour ${donneurOrdre || "-"}`}</div>
+          </div>
+        </div>
+
+        {texteDevis && (
+          <>
+            <h2 className="font-bold uppercase text-sm border-b border-black mb-2 pb-1">Description</h2>
+            <p className="text-sm mb-4 whitespace-pre-wrap">{texteDevis}</p>
+          </>
+        )}
+
+        <h2 className="font-bold uppercase text-sm border-b border-black mb-2 pb-1">Main d'oeuvre</h2>
+        <table className="w-full text-sm mb-4">
+          <tbody>
+            <tr><td className="py-1">Heures</td><td className="text-right">{heures || 0} \u00d7 {rates.heures}\u20ac</td><td className="text-right w-24">{euros((Number(heures)||0)*(Number(rates.heures)||0))}</td></tr>
+            <tr><td className="py-1">Heures samedi</td><td className="text-right">{heuresSamedi || 0} \u00d7 {rates.samedi}\u20ac</td><td className="text-right w-24">{euros((Number(heuresSamedi)||0)*(Number(rates.samedi)||0))}</td></tr>
+            <tr><td className="py-1">Etude</td><td className="text-right">{etude || 0} \u00d7 {rates.etude}\u20ac</td><td className="text-right w-24">{euros((Number(etude)||0)*(Number(rates.etude)||0))}</td></tr>
+          </tbody>
+        </table>
+
+        <h2 className="font-bold uppercase text-sm border-b border-black mb-2 pb-1">Travaux</h2>
+        <table className="w-full text-sm mb-4">
+          <tbody>
+            {lignes.length === 0 && <tr><td className="py-1 text-gray-400">Aucune ligne</td></tr>}
+            {lignes.map((l) => (
+              <tr key={l.id}>
+                <td className="py-1">{l.materiau.replace(/_/g, " ")} \u2014 {l.dim}</td>
+                <td className="text-right">{l.qty} \u00d7 {euros(l.pu)}</td>
+                <td className="text-right w-24">{euros(l.qty * l.pu)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <h2 className="font-bold uppercase text-sm border-b border-black mb-2 pb-1">Sous-traitants & fournitures</h2>
+        <table className="w-full text-sm mb-4">
+          <tbody>
+            <tr><td className="py-1">Sous-traitants</td><td className="text-right w-24">{euros(totalSousTraitants)}</td></tr>
+            <tr><td className="py-1">Fournitures diverses</td><td className="text-right w-24">{euros(totalFournituresDiverses)}</td></tr>
+            <tr><td className="py-1">Consommables</td><td className="text-right w-24">{euros(totalConsommables)}</td></tr>
+            <tr><td className="py-1">Fournitures (matiere)</td><td className="text-right w-24">{euros(totalFournitures)}</td></tr>
+          </tbody>
+        </table>
+
+        {notes && (
+          <>
+            <h2 className="font-bold uppercase text-sm border-b border-black mb-2 pb-1">Notes & remarques</h2>
+            <p className="text-sm mb-4 whitespace-pre-wrap">{notes}</p>
+          </>
+        )}
+
+        <div className="flex justify-end border-t-2 border-black pt-3 mt-6">
+          <div className="text-right">
+            <div className="text-xs uppercase text-gray-500">Total devis</div>
+            <div className="text-2xl font-black">{euros(grandTotal)}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="print:hidden fixed bottom-0 left-0 right-0 bg-[#0F1315] border-t border-[#333F46] px-4 py-3 z-20">
+        <div className="max-w-xl mx-auto">
+          <DimensionTotal value={grandTotal} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<DevisApp />);
+</script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("service-worker.js").catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
