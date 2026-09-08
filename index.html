@@ -127,6 +127,7 @@ function emptyDevis() {
     texte: '',
     marge: 35,
     consommable: { montant: 0, marge: 35 },
+    sousTraitant: { montant: 0, marge: 20 },
     mainOeuvre: MAIN_OEUVRE_DEFAULTS.map((m) => ({ id: m.id, poste: m.poste, nombre: 0, tarif: m.tarif })),
     travaux: [],
     createdAt: new Date().toISOString(),
@@ -138,11 +139,14 @@ function computeTotals(devis) {
   const consoMontant = Number(devis.consommable ? devis.consommable.montant : 0) || 0;
   const consoMarge = Number(devis.consommable ? devis.consommable.marge : 0) || 0;
   const consoTotal = Math.round(consoMontant * (1 + consoMarge / 100) * 100) / 100;
-  const moTotal = moHeuresTotal + consoTotal;
+  const stMontant = Number(devis.sousTraitant ? devis.sousTraitant.montant : 0) || 0;
+  const stMarge = Number(devis.sousTraitant ? devis.sousTraitant.marge : 0) || 0;
+  const stTotal = Math.round(stMontant * (1 + stMarge / 100) * 100) / 100;
+  const moTotal = moHeuresTotal + consoTotal + stTotal;
   const travTotalAchat = devis.travaux.reduce((s, l) => s + (Number(l.quantite) || 0) * (Number(l.prixUnitaire) || 0), 0);
   const margeNum = Number(devis.marge) || 0;
   const travTotal = Math.round(travTotalAchat * (1 + margeNum / 100) * 100) / 100;
-  return { moHeuresTotal, consoTotal, moTotal, travTotalAchat, travTotal, total: moTotal + travTotal };
+  return { moHeuresTotal, consoTotal, stTotal, moTotal, travTotalAchat, travTotal, total: moTotal + travTotal };
 }
 
 function RivetPlate({ children, className = '' }) {
@@ -264,6 +268,7 @@ function DevisApp() {
         const parsed = JSON.parse(res.value);
         if (parsed.marge === undefined) parsed.marge = 35;
         if (!parsed.consommable) parsed.consommable = { montant: 0, marge: 35 };
+        if (!parsed.sousTraitant) parsed.sousTraitant = { montant: 0, marge: 20 };
         if (parsed.dossier === undefined) parsed.dossier = '';
         setDevis(parsed);
         setTab('nouveau');
@@ -326,6 +331,7 @@ function DevisApp() {
         const parsed = JSON.parse(e.target.result);
         if (parsed.marge === undefined) parsed.marge = 35;
         if (!parsed.consommable) parsed.consommable = { montant: 0, marge: 35 };
+        if (!parsed.sousTraitant) parsed.sousTraitant = { montant: 0, marge: 20 };
         if (parsed.dossier === undefined) parsed.dossier = '';
         if (!parsed.id) parsed.id = uid();
         setDevis(parsed);
@@ -351,6 +357,10 @@ function DevisApp() {
 
   function updateConsommable(field, value) {
     setDevis((d) => ({ ...d, consommable: { ...d.consommable, [field]: value } }));
+  }
+
+  function updateSousTraitant(field, value) {
+    setDevis((d) => ({ ...d, sousTraitant: { ...d.sousTraitant, [field]: value } }));
   }
 
   function addTravauxLine() {
@@ -803,6 +813,20 @@ function DevisApp() {
               />
               <div className="mo-total mono">{euros(totals.consoTotal)}</div>
             </div>
+            <div className="mo-line">
+              <div className="mo-static">Sous-traitant</div>
+              <input
+                type="number" min="0" step="0.01" className="mono"
+                value={devis.sousTraitant.montant}
+                onChange={(e) => updateSousTraitant('montant', parseFloat(e.target.value) || 0)}
+              />
+              <input
+                type="number" min="0" step="1" className="mono"
+                value={devis.sousTraitant.marge}
+                onChange={(e) => updateSousTraitant('marge', parseFloat(e.target.value) || 0)}
+              />
+              <div className="mo-total mono">{euros(totals.stTotal)}</div>
+            </div>
           </RivetPlate>
 
           <RivetPlate>
@@ -1107,6 +1131,12 @@ function DevisApp() {
               <td className="num">{euros(devis.consommable.montant)}</td>
               <td className="num">{devis.consommable.marge}%</td>
               <td className="num">{euros(totals.consoTotal)}</td>
+            </tr>
+            <tr>
+              <td>Sous-traitant</td>
+              <td className="num">{euros(devis.sousTraitant.montant)}</td>
+              <td className="num">{devis.sousTraitant.marge}%</td>
+              <td className="num">{euros(totals.stTotal)}</td>
             </tr>
           </tbody>
         </table>
