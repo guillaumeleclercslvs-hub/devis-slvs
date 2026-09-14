@@ -172,6 +172,8 @@ function Field({ label, children, mono = false }) {
 
 function DevisApp() {
   const [tab, setTab] = useState('nouveau');
+  const [plie, setPlie] = useState({ entete: false, mo: false, travaux: false });
+  const togglePlie = (k) => setPlie((p) => ({ ...p, [k]: !p[k] }));
   const [devis, setDevis] = useState(emptyDevis);
   const [savedList, setSavedList] = useState([]);
   const [customClients, setCustomClients] = useState([]);
@@ -469,6 +471,20 @@ function DevisApp() {
           border-bottom: 3px solid var(--amber); padding-bottom: 6px;
         }
         .section-label .rule { flex: 1; height: 1px; background: var(--border); }
+        .section-toggle { cursor: pointer; user-select: none; }
+        .sec-total { font-size: 12px; color: var(--text-dim); font-weight: 400; text-transform: none; letter-spacing: 0; }
+        .sec-chevron { transition: transform 0.15s ease; transform: rotate(-90deg); color: var(--text-dim); }
+        .sec-chevron.open { transform: rotate(0deg); }
+        .sec-resume { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--text-dim); padding: 2px 4px 4px; }
+        .recap-empty { font-size: 12.5px; color: var(--text-dim); font-style: italic; }
+        .recap-table { display: flex; flex-direction: column; gap: 4px; }
+        .recap-row { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; font-size: 12.5px; padding: 5px 0; border-bottom: 1px dashed var(--border); align-items: center; }
+        .recap-name { color: var(--text); word-break: break-word; }
+        .recap-ref { color: var(--text-dim); }
+        .recap-qty { color: var(--text-dim); font-size: 11.5px; white-space: nowrap; }
+        .recap-total { white-space: nowrap; }
+        .recap-sum { border-bottom: none; border-top: 1px solid var(--border); font-weight: 600; margin-top: 2px; }
+        .recap-sum .recap-total { color: var(--amber); }
 
         .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .row3 { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 10px; }
@@ -682,7 +698,17 @@ function DevisApp() {
       {tab === 'nouveau' && (
         <div className="content">
           <RivetPlate>
-            <div className="section-label"><FileText size={13} /> En-tête <span className="rule" /></div>
+            <div className="section-label section-toggle" onClick={() => togglePlie('entete')}>
+              <FileText size={13} /> En-tête <span className="rule" />
+              <ChevronDown size={15} className={plie.entete ? 'sec-chevron' : 'sec-chevron open'} />
+            </div>
+            {plie.entete && (
+              <div className="sec-resume">
+                <span>{devis.type} {devis.numero || '(sans n°)'} — {devis.date}</span>
+                <span>{devis.client || 'Client non choisi'}{devis.chantier ? ' · ' + devis.chantier : ''}</span>
+              </div>
+            )}
+            {!plie.entete && (<React.Fragment>
             <div className="row2">
               <Field label="N° devis">
                 <input className="mono" value={devis.numero} onChange={(e) => updateHeader('numero', e.target.value)} placeholder="ex. 2026-014" />
@@ -773,10 +799,26 @@ function DevisApp() {
             <Field label="Texte du devis">
               <textarea value={devis.texte} onChange={(e) => updateHeader('texte', e.target.value)} placeholder="Description, conditions..." />
             </Field>
+            </React.Fragment>)}
           </RivetPlate>
 
           <RivetPlate>
-            <div className="section-label"><Hammer size={13} /> Main d'œuvre <span className="rule" /></div>
+            <div className="section-label section-toggle" onClick={() => togglePlie('mo')}>
+              <Hammer size={13} /> Main d'œuvre <span className="rule" />
+              <span className="sec-total mono">{euros(totals.moTotal)}</span>
+              <ChevronDown size={15} className={plie.mo ? 'sec-chevron' : 'sec-chevron open'} />
+            </div>
+            {plie.mo && (
+              <div className="sec-resume">
+                {devis.mainOeuvre.filter((l) => Number(l.nombre) > 0).map((l) => (
+                  <span key={l.id}>{l.poste} : {l.nombre} × {l.tarif} € = {euros((Number(l.nombre) || 0) * (Number(l.tarif) || 0))}</span>
+                ))}
+                {Number(devis.consommable.montant) > 0 && <span>Consommable : {euros(totals.consoTotal)} (marge {devis.consommable.marge}%)</span>}
+                {Number(devis.sousTraitant.montant) > 0 && <span>Sous-traitant : {euros(totals.stTotal)} (marge {devis.sousTraitant.marge}%)</span>}
+                {totals.moTotal === 0 && <span>Rien de saisi</span>}
+              </div>
+            )}
+            {!plie.mo && (<React.Fragment>
             <div className="mo-line mo-header">
               <div>Poste</div>
               <div>Nb / Montant</div>
@@ -827,10 +869,27 @@ function DevisApp() {
               />
               <div className="mo-total mono">{euros(totals.stTotal)}</div>
             </div>
+            </React.Fragment>)}
           </RivetPlate>
 
           <RivetPlate>
-            <div className="section-label"><Wrench size={13} /> Travaux <span className="rule" /></div>
+            <div className="section-label section-toggle" onClick={() => togglePlie('travaux')}>
+              <Wrench size={13} /> Travaux <span className="rule" />
+              <span className="sec-total mono">{devis.travaux.length} ligne{devis.travaux.length > 1 ? 's' : ''} · {euros(totals.travTotal)}</span>
+              <ChevronDown size={15} className={plie.travaux ? 'sec-chevron' : 'sec-chevron open'} />
+            </div>
+            {plie.travaux && (
+              <div className="sec-resume">
+                {devis.travaux.length === 0 && <span>Aucune ligne</span>}
+                {devis.travaux.map((l) => (
+                  <span key={l.id}>
+                    {l.fournisseur ? (l.designation || 'Devis fournisseur') : ((l.materiel || '—') + (l.ref ? ' ' + l.ref : ''))}
+                    {' — '}{l.quantite} × {euros(l.prixUnitaire)} = {euros((Number(l.quantite) || 0) * (Number(l.prixUnitaire) || 0))}
+                  </span>
+                ))}
+              </div>
+            )}
+            {!plie.travaux && (<React.Fragment>
             <Field label="Marge (%) — appliquée au prix catalogue">
               <input
                 type="number" min="0" step="1" className="mono"
@@ -925,6 +984,32 @@ function DevisApp() {
               );
             })}
             <button className="add-line-btn" onClick={addTravauxLine}><Plus size={15} /> Ajouter une ligne</button>
+            </React.Fragment>)}
+          </RivetPlate>
+
+          <RivetPlate>
+            <div className="section-label"><Archive size={13} /> Récap matériel <span className="rule" /></div>
+            {devis.travaux.length === 0 ? (
+              <div className="recap-empty">Aucune ligne de travaux pour l'instant.</div>
+            ) : (
+              <div className="recap-table">
+                {devis.travaux.map((l) => (
+                  <div className="recap-row" key={l.id}>
+                    <span className="recap-name">
+                      {l.fournisseur ? (l.designation || 'Devis fournisseur') : (l.materiel || '—')}
+                      {!l.fournisseur && l.ref ? <span className="recap-ref"> {l.ref}</span> : null}
+                    </span>
+                    <span className="mono recap-qty">{l.quantite} × {euros(l.prixUnitaire)}</span>
+                    <span className="mono recap-total">{euros((Number(l.quantite) || 0) * (Number(l.prixUnitaire) || 0))}</span>
+                  </div>
+                ))}
+                <div className="recap-row recap-sum">
+                  <span className="recap-name">Total achat</span>
+                  <span className="recap-qty"></span>
+                  <span className="mono recap-total">{euros(totals.travTotalAchat)}</span>
+                </div>
+              </div>
+            )}
           </RivetPlate>
 
           <div className="totals-strip">
