@@ -59,6 +59,7 @@ const Plus = (p) => <Icon {...p}><line x1="12" y1="5" x2="12" y2="19"/><line x1=
 const Trash2 = (p) => <Icon {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></Icon>;
 const FileText = (p) => <Icon {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></Icon>;
 const Users = (p) => <Icon {...p}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></Icon>;
+const Layers = (p) => <Icon {...p}><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></Icon>;
 const Archive = (p) => <Icon {...p}><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></Icon>;
 const Search = (p) => <Icon {...p}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></Icon>;
 const ChevronDown = (p) => <Icon {...p}><polyline points="6 9 12 15 18 9"/></Icon>;
@@ -113,6 +114,19 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function emptyPoste(titre) {
+  return {
+    id: uid(),
+    titre: titre || 'Poste 1',
+    texte: '',
+    marge: 35,
+    consommable: { montant: 0, marge: 35 },
+    sousTraitant: { montant: 0, marge: 20 },
+    mainOeuvre: MAIN_OEUVRE_DEFAULTS.map((m) => ({ id: m.id, poste: m.poste, nombre: 0, tarif: m.tarif })),
+    travaux: [],
+  };
+}
+
 function emptyDevis() {
   return {
     id: uid(),
@@ -125,28 +139,63 @@ function emptyDevis() {
     chantier: '',
     dossier: '',
     texte: '',
-    marge: 35,
-    consommable: { montant: 0, marge: 35 },
-    sousTraitant: { montant: 0, marge: 20 },
-    mainOeuvre: MAIN_OEUVRE_DEFAULTS.map((m) => ({ id: m.id, poste: m.poste, nombre: 0, tarif: m.tarif })),
-    travaux: [],
+    postes: [emptyPoste('Poste 1')],
     createdAt: new Date().toISOString(),
   };
 }
 
-function computeTotals(devis) {
-  const moHeuresTotal = devis.mainOeuvre.reduce((s, l) => s + (Number(l.nombre) || 0) * (Number(l.tarif) || 0), 0);
-  const consoMontant = Number(devis.consommable ? devis.consommable.montant : 0) || 0;
-  const consoMarge = Number(devis.consommable ? devis.consommable.marge : 0) || 0;
+// Met un devis (ancien format à un seul poste, ou nouveau format) au format "postes"
+function normalizeDevis(d) {
+  const out = { ...d };
+  if (!out.id) out.id = uid();
+  if (out.dossier === undefined) out.dossier = '';
+  if (!out.postes || !out.postes.length) {
+    const p = emptyPoste('Poste 1');
+    if (out.marge !== undefined) p.marge = out.marge;
+    if (out.consommable) p.consommable = out.consommable;
+    if (out.sousTraitant) p.sousTraitant = out.sousTraitant;
+    if (out.mainOeuvre) p.mainOeuvre = out.mainOeuvre;
+    if (out.travaux) p.travaux = out.travaux;
+    out.postes = [p];
+  }
+  out.postes = out.postes.map((p, i) => {
+    const base = emptyPoste('Poste ' + (i + 1));
+    const q = { ...base, ...p };
+    if (!q.consommable) q.consommable = base.consommable;
+    if (!q.sousTraitant) q.sousTraitant = base.sousTraitant;
+    if (!q.mainOeuvre) q.mainOeuvre = base.mainOeuvre;
+    if (!q.travaux) q.travaux = [];
+    if (q.marge === undefined) q.marge = 35;
+    if (q.texte === undefined) q.texte = '';
+    return q;
+  });
+  delete out.marge; delete out.consommable; delete out.sousTraitant; delete out.mainOeuvre; delete out.travaux;
+  return out;
+}
+
+function computePosteTotals(p) {
+  const moHeuresTotal = p.mainOeuvre.reduce((s, l) => s + (Number(l.nombre) || 0) * (Number(l.tarif) || 0), 0);
+  const consoMontant = Number(p.consommable ? p.consommable.montant : 0) || 0;
+  const consoMarge = Number(p.consommable ? p.consommable.marge : 0) || 0;
   const consoTotal = Math.round(consoMontant * (1 + consoMarge / 100) * 100) / 100;
-  const stMontant = Number(devis.sousTraitant ? devis.sousTraitant.montant : 0) || 0;
-  const stMarge = Number(devis.sousTraitant ? devis.sousTraitant.marge : 0) || 0;
+  const stMontant = Number(p.sousTraitant ? p.sousTraitant.montant : 0) || 0;
+  const stMarge = Number(p.sousTraitant ? p.sousTraitant.marge : 0) || 0;
   const stTotal = Math.round(stMontant * (1 + stMarge / 100) * 100) / 100;
   const moTotal = moHeuresTotal + consoTotal + stTotal;
-  const travTotalAchat = devis.travaux.reduce((s, l) => s + (Number(l.quantite) || 0) * (Number(l.prixUnitaire) || 0), 0);
-  const margeNum = Number(devis.marge) || 0;
+  const travTotalAchat = p.travaux.reduce((s, l) => s + (Number(l.quantite) || 0) * (Number(l.prixUnitaire) || 0), 0);
+  const margeNum = Number(p.marge) || 0;
   const travTotal = Math.round(travTotalAchat * (1 + margeNum / 100) * 100) / 100;
   return { moHeuresTotal, consoTotal, stTotal, moTotal, travTotalAchat, travTotal, total: moTotal + travTotal };
+}
+
+function computeTotals(devis) {
+  const postes = (devis.postes || []).map((p) => ({ id: p.id, titre: p.titre, t: computePosteTotals(p) }));
+  const sum = (k) => postes.reduce((s, x) => s + x.t[k], 0);
+  return {
+    postes,
+    moHeuresTotal: sum('moHeuresTotal'), consoTotal: sum('consoTotal'), stTotal: sum('stTotal'), moTotal: sum('moTotal'),
+    travTotalAchat: sum('travTotalAchat'), travTotal: sum('travTotal'), total: sum('total'),
+  };
 }
 
 function RivetPlate({ children, className = '' }) {
@@ -173,6 +222,7 @@ function Field({ label, children, mono = false }) {
 function DevisApp() {
   const [tab, setTab] = useState('nouveau');
   const [plie, setPlie] = useState({ entete: false, mo: false, travaux: false });
+  const [activeIdx, setActiveIdx] = useState(0);
   const togglePlie = (k) => setPlie((p) => ({ ...p, [k]: !p[k] }));
   const [devis, setDevis] = useState(emptyDevis);
   const [savedList, setSavedList] = useState([]);
@@ -267,12 +317,9 @@ function DevisApp() {
     try {
       const res = await window.storage.get(`devis:${id}`);
       if (res) {
-        const parsed = JSON.parse(res.value);
-        if (parsed.marge === undefined) parsed.marge = 35;
-        if (!parsed.consommable) parsed.consommable = { montant: 0, marge: 35 };
-        if (!parsed.sousTraitant) parsed.sousTraitant = { montant: 0, marge: 20 };
-        if (parsed.dossier === undefined) parsed.dossier = '';
+        const parsed = normalizeDevis(JSON.parse(res.value));
         setDevis(parsed);
+        setActiveIdx(0);
         setTab('nouveau');
       }
     } catch (e) {
@@ -304,6 +351,7 @@ function DevisApp() {
 
   function newDevis() {
     setDevis(emptyDevis());
+    setActiveIdx(0);
     setTab('nouveau');
     showToast('Nouveau devis prêt');
   }
@@ -330,13 +378,9 @@ function DevisApp() {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const parsed = JSON.parse(e.target.result);
-        if (parsed.marge === undefined) parsed.marge = 35;
-        if (!parsed.consommable) parsed.consommable = { montant: 0, marge: 35 };
-        if (!parsed.sousTraitant) parsed.sousTraitant = { montant: 0, marge: 20 };
-        if (parsed.dossier === undefined) parsed.dossier = '';
-        if (!parsed.id) parsed.id = uid();
+        const parsed = normalizeDevis(JSON.parse(e.target.result));
         setDevis(parsed);
+        setActiveIdx(0);
         setTab('nouveau');
         showToast('Devis importé');
       } catch (err) {
@@ -350,43 +394,72 @@ function DevisApp() {
     setDevis((d) => ({ ...d, [field]: value }));
   }
 
-  function updateMainOeuvre(id, field, value) {
+  // Modifie le poste actif
+  function updatePoste(fn) {
     setDevis((d) => ({
       ...d,
-      mainOeuvre: d.mainOeuvre.map((l) => (l.id === id ? { ...l, [field]: value } : l)),
+      postes: d.postes.map((p, i) => (i === activeIdx ? fn(p) : p)),
+    }));
+  }
+
+  function updatePosteField(field, value) {
+    updatePoste((p) => ({ ...p, [field]: value }));
+  }
+
+  function addPoste() {
+    const n = devis.postes.length;
+    setDevis((d) => ({ ...d, postes: [...d.postes, emptyPoste('Poste ' + (d.postes.length + 1))] }));
+    setActiveIdx(n);
+  }
+
+  function removePoste(idx) {
+    if (devis.postes.length <= 1) return;
+    if (!window.confirm('Supprimer ce poste et tout son contenu ?')) return;
+    setDevis((d) => ({ ...d, postes: d.postes.filter((p, i) => i !== idx) }));
+    setActiveIdx(Math.max(0, Math.min(idx, devis.postes.length - 2)));
+  }
+
+  function updateMainOeuvre(id, field, value) {
+    updatePoste((p) => ({
+      ...p,
+      mainOeuvre: p.mainOeuvre.map((l) => (l.id === id ? { ...l, [field]: value } : l)),
     }));
   }
 
   function updateConsommable(field, value) {
-    setDevis((d) => ({ ...d, consommable: { ...d.consommable, [field]: value } }));
+    updatePoste((p) => ({ ...p, consommable: { ...p.consommable, [field]: value } }));
   }
 
   function updateSousTraitant(field, value) {
-    setDevis((d) => ({ ...d, sousTraitant: { ...d.sousTraitant, [field]: value } }));
+    updatePoste((p) => ({ ...p, sousTraitant: { ...p.sousTraitant, [field]: value } }));
   }
 
   function addTravauxLine() {
-    setDevis((d) => ({
-      ...d,
+    updatePoste((p) => ({
+      ...p,
       travaux: [
-        ...d.travaux,
+        ...p.travaux,
         { id: uid(), categorie: '', materiel: '', ref: '', prixUnitaire: 0, quantite: 1 },
       ],
     }));
   }
 
   function updateTravauxLine(id, patch) {
-    setDevis((d) => ({
-      ...d,
-      travaux: d.travaux.map((l) => (l.id === id ? { ...l, ...patch } : l)),
+    updatePoste((p) => ({
+      ...p,
+      travaux: p.travaux.map((l) => (l.id === id ? { ...l, ...patch } : l)),
     }));
   }
 
   function removeTravauxLine(id) {
-    setDevis((d) => ({ ...d, travaux: d.travaux.filter((l) => l.id !== id) }));
+    updatePoste((p) => ({ ...p, travaux: p.travaux.filter((l) => l.id !== id) }));
   }
 
   const totals = computeTotals(devis);
+  const safeIdx = Math.min(activeIdx, devis.postes.length - 1);
+  const poste = devis.postes[safeIdx];
+  const pt = computePosteTotals(poste);
+  const multi = devis.postes.length > 1;
 
   return (
     <div className="app-root">
@@ -472,6 +545,21 @@ function DevisApp() {
         }
         .section-label .rule { flex: 1; height: 1px; background: var(--border); }
         .section-toggle { cursor: pointer; user-select: none; }
+        .poste-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .poste-tab { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 7px 11px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 6px; color: var(--text-dim); font-family: inherit; font-size: 12.5px; cursor: pointer; }
+        .poste-tab.active { border-color: #E2181F; color: var(--text); background: rgba(226,24,31,0.14); }
+        .poste-tab-name { font-weight: 600; }
+        .poste-tab-total { font-size: 11px; }
+        .poste-add { flex-direction: row; align-items: center; gap: 4px; border-style: dashed; justify-content: center; }
+        .poste-edit { display: flex; flex-direction: column; gap: 8px; }
+        .poste-del { align-self: flex-start; display: inline-flex; align-items: center; gap: 5px; background: transparent; border: 1px solid var(--border); color: var(--text-dim); border-radius: 6px; padding: 6px 10px; font-family: inherit; font-size: 12px; cursor: pointer; }
+        .poste-del:hover { border-color: #E2181F; color: #E2181F; }
+        .recap-poste { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; color: #E2181F; margin-top: 6px; }
+        .totals-poste { color: var(--text-dim); font-size: 12.5px; }
+        .p-poste { margin-top: 10px; }
+        .p-poste-title { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #E2181F; border-bottom: 2px solid #E2181F; padding-bottom: 3px; margin: 14px 0 6px; }
+        .p-poste-total { font-weight: 700; border-top: 1px solid #999; padding-top: 3px; }
+        .p-totals-global { margin-top: 14px; border-top: 2px solid #111; padding-top: 6px; }
         .sec-total { font-size: 12px; color: var(--text-dim); font-weight: 400; text-transform: none; letter-spacing: 0; }
         .sec-chevron { transition: transform 0.15s ease; transform: rotate(-90deg); color: var(--text-dim); }
         .sec-chevron.open { transform: rotate(0deg); }
@@ -803,19 +891,43 @@ function DevisApp() {
           </RivetPlate>
 
           <RivetPlate>
+            <div className="section-label"><Layers size={13} /> Postes du devis <span className="rule" /><span className="sec-total mono">{devis.postes.length}</span></div>
+            <div className="poste-tabs">
+              {devis.postes.map((p, i) => (
+                <button key={p.id} className={'poste-tab' + (i === safeIdx ? ' active' : '')} onClick={() => setActiveIdx(i)}>
+                  <span className="poste-tab-name">{p.titre || ('Poste ' + (i + 1))}</span>
+                  <span className="poste-tab-total mono">{euros(totals.postes[i].t.total)}</span>
+                </button>
+              ))}
+              <button className="poste-tab poste-add" onClick={addPoste}><Plus size={14} /> Poste</button>
+            </div>
+            <div className="poste-edit">
+              <Field label="Nom du poste">
+                <input value={poste.titre} onChange={(e) => updatePosteField('titre', e.target.value)} placeholder="Ex. Tuyauterie DN250, Carters, Supportage…" />
+              </Field>
+              <Field label="Description du poste (optionnel, imprimée sous le titre)">
+                <textarea value={poste.texte} onChange={(e) => updatePosteField('texte', e.target.value)} placeholder="Détail des travaux de ce poste…" />
+              </Field>
+              {multi && (
+                <button className="poste-del" onClick={() => removePoste(safeIdx)}><Trash2 size={14} /> Supprimer ce poste</button>
+              )}
+            </div>
+          </RivetPlate>
+
+          <RivetPlate>
             <div className="section-label section-toggle" onClick={() => togglePlie('mo')}>
               <Hammer size={13} /> Main d'œuvre <span className="rule" />
-              <span className="sec-total mono">{euros(totals.moTotal)}</span>
+              <span className="sec-total mono">{euros(pt.moTotal)}</span>
               <ChevronDown size={15} className={plie.mo ? 'sec-chevron' : 'sec-chevron open'} />
             </div>
             {plie.mo && (
               <div className="sec-resume">
-                {devis.mainOeuvre.filter((l) => Number(l.nombre) > 0).map((l) => (
+                {poste.mainOeuvre.filter((l) => Number(l.nombre) > 0).map((l) => (
                   <span key={l.id}>{l.poste} : {l.nombre} × {l.tarif} € = {euros((Number(l.nombre) || 0) * (Number(l.tarif) || 0))}</span>
                 ))}
-                {Number(devis.consommable.montant) > 0 && <span>Consommable : {euros(totals.consoTotal)} (marge {devis.consommable.marge}%)</span>}
-                {Number(devis.sousTraitant.montant) > 0 && <span>Sous-traitant : {euros(totals.stTotal)} (marge {devis.sousTraitant.marge}%)</span>}
-                {totals.moTotal === 0 && <span>Rien de saisi</span>}
+                {Number(poste.consommable.montant) > 0 && <span>Consommable : {euros(pt.consoTotal)} (marge {poste.consommable.marge}%)</span>}
+                {Number(poste.sousTraitant.montant) > 0 && <span>Sous-traitant : {euros(pt.stTotal)} (marge {poste.sousTraitant.marge}%)</span>}
+                {pt.moTotal === 0 && <span>Rien de saisi</span>}
               </div>
             )}
             {!plie.mo && (<React.Fragment>
@@ -825,7 +937,7 @@ function DevisApp() {
               <div>Tarif / Marge %</div>
               <div style={{textAlign: 'right'}}>Total</div>
             </div>
-            {devis.mainOeuvre.map((l) => (
+            {poste.mainOeuvre.map((l) => (
               <div className="mo-line" key={l.id}>
                 <div className="mo-static">{l.poste}</div>
                 <input
@@ -845,29 +957,29 @@ function DevisApp() {
               <div className="mo-static">Consommable</div>
               <input
                 type="number" min="0" step="0.01" className="mono"
-                value={devis.consommable.montant}
+                value={poste.consommable.montant}
                 onChange={(e) => updateConsommable('montant', parseFloat(e.target.value) || 0)}
               />
               <input
                 type="number" min="0" step="1" className="mono"
-                value={devis.consommable.marge}
+                value={poste.consommable.marge}
                 onChange={(e) => updateConsommable('marge', parseFloat(e.target.value) || 0)}
               />
-              <div className="mo-total mono">{euros(totals.consoTotal)}</div>
+              <div className="mo-total mono">{euros(pt.consoTotal)}</div>
             </div>
             <div className="mo-line">
               <div className="mo-static">Sous-traitant</div>
               <input
                 type="number" min="0" step="0.01" className="mono"
-                value={devis.sousTraitant.montant}
+                value={poste.sousTraitant.montant}
                 onChange={(e) => updateSousTraitant('montant', parseFloat(e.target.value) || 0)}
               />
               <input
                 type="number" min="0" step="1" className="mono"
-                value={devis.sousTraitant.marge}
+                value={poste.sousTraitant.marge}
                 onChange={(e) => updateSousTraitant('marge', parseFloat(e.target.value) || 0)}
               />
-              <div className="mo-total mono">{euros(totals.stTotal)}</div>
+              <div className="mo-total mono">{euros(pt.stTotal)}</div>
             </div>
             </React.Fragment>)}
           </RivetPlate>
@@ -875,13 +987,13 @@ function DevisApp() {
           <RivetPlate>
             <div className="section-label section-toggle" onClick={() => togglePlie('travaux')}>
               <Wrench size={13} /> Travaux <span className="rule" />
-              <span className="sec-total mono">{devis.travaux.length} ligne{devis.travaux.length > 1 ? 's' : ''} · {euros(totals.travTotal)}</span>
+              <span className="sec-total mono">{poste.travaux.length} ligne{poste.travaux.length > 1 ? 's' : ''} · {euros(pt.travTotal)}</span>
               <ChevronDown size={15} className={plie.travaux ? 'sec-chevron' : 'sec-chevron open'} />
             </div>
             {plie.travaux && (
               <div className="sec-resume">
-                {devis.travaux.length === 0 && <span>Aucune ligne</span>}
-                {devis.travaux.map((l) => (
+                {poste.travaux.length === 0 && <span>Aucune ligne</span>}
+                {poste.travaux.map((l) => (
                   <span key={l.id}>
                     {l.fournisseur ? (l.designation || 'Devis fournisseur') : ((l.materiel || '—') + (l.ref ? ' ' + l.ref : ''))}
                     {' — '}{l.quantite} × {euros(l.prixUnitaire)} = {euros((Number(l.quantite) || 0) * (Number(l.prixUnitaire) || 0))}
@@ -893,11 +1005,11 @@ function DevisApp() {
             <Field label="Marge (%) — appliquée au prix catalogue">
               <input
                 type="number" min="0" step="1" className="mono"
-                value={devis.marge}
-                onChange={(e) => updateHeader('marge', parseFloat(e.target.value) || 0)}
+                value={poste.marge}
+                onChange={(e) => updatePosteField('marge', parseFloat(e.target.value) || 0)}
               />
             </Field>
-            {devis.travaux.map((l) => {
+            {poste.travaux.map((l) => {
               const materiels = l.categorie ? Object.keys(CATEGORIES[l.categorie] || {}) : [];
               const refs = l.categorie && l.materiel ? (CATEGORIES[l.categorie][l.materiel] || []) : [];
               return (
@@ -989,19 +1101,24 @@ function DevisApp() {
 
           <RivetPlate>
             <div className="section-label"><Archive size={13} /> Récap matériel <span className="rule" /></div>
-            {devis.travaux.length === 0 ? (
+            {devis.postes.every((p) => p.travaux.length === 0) ? (
               <div className="recap-empty">Aucune ligne de travaux pour l'instant.</div>
             ) : (
               <div className="recap-table">
-                {devis.travaux.map((l) => (
-                  <div className="recap-row" key={l.id}>
-                    <span className="recap-name">
-                      {l.fournisseur ? (l.designation || 'Devis fournisseur') : (l.materiel || '—')}
-                      {!l.fournisseur && l.ref ? <span className="recap-ref"> {l.ref}</span> : null}
-                    </span>
-                    <span className="mono recap-qty">{l.quantite} × {euros(l.prixUnitaire)}</span>
-                    <span className="mono recap-total">{euros((Number(l.quantite) || 0) * (Number(l.prixUnitaire) || 0))}</span>
-                  </div>
+                {devis.postes.map((p, i) => (
+                  <React.Fragment key={p.id}>
+                    {multi && p.travaux.length > 0 && <div className="recap-poste">{p.titre || ('Poste ' + (i + 1))}</div>}
+                    {p.travaux.map((l) => (
+                      <div className="recap-row" key={l.id}>
+                        <span className="recap-name">
+                          {l.fournisseur ? (l.designation || 'Devis fournisseur') : (l.materiel || '—')}
+                          {!l.fournisseur && l.ref ? <span className="recap-ref"> {l.ref}</span> : null}
+                        </span>
+                        <span className="mono recap-qty">{l.quantite} × {euros(l.prixUnitaire)}</span>
+                        <span className="mono recap-total">{euros((Number(l.quantite) || 0) * (Number(l.prixUnitaire) || 0))}</span>
+                      </div>
+                    ))}
+                  </React.Fragment>
                 ))}
                 <div className="recap-row recap-sum">
                   <span className="recap-name">Total achat</span>
@@ -1013,9 +1130,12 @@ function DevisApp() {
           </RivetPlate>
 
           <div className="totals-strip">
+            {multi && totals.postes.map((x, i) => (
+              <div className="totals-row totals-poste" key={x.id}><span>{x.titre || ('Poste ' + (i + 1))}</span><span className="mono">{euros(x.t.total)}</span></div>
+            ))}
             <div className="totals-row"><span>Sous-total main d'œuvre</span><span className="mono">{euros(totals.moTotal)}</span></div>
             <div className="totals-row"><span>Sous-total travaux (achat)</span><span className="mono">{euros(totals.travTotalAchat)}</span></div>
-            <div className="totals-row"><span>Marge ({devis.marge}%)</span><span className="mono">{euros(totals.travTotal - totals.travTotalAchat)}</span></div>
+            <div className="totals-row"><span>Marge{multi ? '' : ' (' + poste.marge + '%)'}</span><span className="mono">{euros(totals.travTotal - totals.travTotalAchat)}</span></div>
             <div className="totals-row"><span>Sous-total travaux (avec marge)</span><span className="mono">{euros(totals.travTotal)}</span></div>
             <div className="totals-row grand"><span>Total</span><span className="mono">{euros(totals.total)}</span></div>
           </div>
@@ -1199,55 +1319,79 @@ function DevisApp() {
           </div>
         )}
 
-        <div className="p-section-title">Main d'œuvre</div>
-        <table>
-          <thead><tr><th>Poste</th><th className="num">Nb / Montant</th><th className="num">Tarif / Marge</th><th className="num">Total</th></tr></thead>
-          <tbody>
-            {devis.mainOeuvre.map((l) => (
-              <tr key={l.id}>
-                <td>{l.poste}</td>
-                <td className="num">{l.nombre}</td>
-                <td className="num">{l.tarif} €</td>
-                <td className="num">{euros((Number(l.nombre) || 0) * (Number(l.tarif) || 0))}</td>
-              </tr>
-            ))}
-            <tr>
-              <td>Consommable</td>
-              <td className="num">{euros(devis.consommable.montant)}</td>
-              <td className="num">{devis.consommable.marge}%</td>
-              <td className="num">{euros(totals.consoTotal)}</td>
-            </tr>
-            <tr>
-              <td>Sous-traitant</td>
-              <td className="num">{euros(devis.sousTraitant.montant)}</td>
-              <td className="num">{devis.sousTraitant.marge}%</td>
-              <td className="num">{euros(totals.stTotal)}</td>
-            </tr>
-          </tbody>
-        </table>
+        {devis.postes.map((p, i) => {
+          const t = totals.postes[i].t;
+          return (
+            <div className="p-poste" key={p.id}>
+              {multi && <div className="p-poste-title">{p.titre || ('Poste ' + (i + 1))}</div>}
+              {p.texte && (
+                <div className="p-texte p-texte-poste">
+                  {splitTexteLignes(p.texte).map((ligne, j) => (
+                    <div key={j} className="p-texte-line">{ligne}</div>
+                  ))}
+                </div>
+              )}
+              <div className="p-section-title">Main d'œuvre</div>
+              <table>
+                <thead><tr><th>Poste</th><th className="num">Nb / Montant</th><th className="num">Tarif / Marge</th><th className="num">Total</th></tr></thead>
+                <tbody>
+                  {p.mainOeuvre.map((l) => (
+                    <tr key={l.id}>
+                      <td>{l.poste}</td>
+                      <td className="num">{l.nombre}</td>
+                      <td className="num">{l.tarif} €</td>
+                      <td className="num">{euros((Number(l.nombre) || 0) * (Number(l.tarif) || 0))}</td>
+                    </tr>
+                  ))}
+                  <tr>
+                    <td>Consommable</td>
+                    <td className="num">{euros(p.consommable.montant)}</td>
+                    <td className="num">{p.consommable.marge}%</td>
+                    <td className="num">{euros(t.consoTotal)}</td>
+                  </tr>
+                  <tr>
+                    <td>Sous-traitant</td>
+                    <td className="num">{euros(p.sousTraitant.montant)}</td>
+                    <td className="num">{p.sousTraitant.marge}%</td>
+                    <td className="num">{euros(t.stTotal)}</td>
+                  </tr>
+                </tbody>
+              </table>
 
-        <div className="p-section-title">Matériel / Travaux</div>
-        <table>
-          <thead><tr><th>Désignation</th><th>Réf.</th><th className="num">Qté</th><th className="num">P.U.</th><th className="num">Total</th></tr></thead>
-          <tbody>
-            {devis.travaux.map((l) => (
-              <tr key={l.id}>
-                <td>{l.fournisseur ? (l.designation || 'Devis fournisseur') : (l.materiel || '—')}</td>
-                <td>{l.fournisseur ? '—' : (l.ref || '—')}</td>
-                <td className="num">{l.quantite}</td>
-                <td className="num">{euros(l.prixUnitaire)}</td>
-                <td className="num">{euros((Number(l.quantite) || 0) * (Number(l.prixUnitaire) || 0))}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+              <div className="p-section-title">Matériel / Travaux</div>
+              <table>
+                <thead><tr><th>Désignation</th><th>Réf.</th><th className="num">Qté</th><th className="num">P.U.</th><th className="num">Total</th></tr></thead>
+                <tbody>
+                  {p.travaux.map((l) => (
+                    <tr key={l.id}>
+                      <td>{l.fournisseur ? (l.designation || 'Devis fournisseur') : (l.materiel || '—')}</td>
+                      <td>{l.fournisseur ? '—' : (l.ref || '—')}</td>
+                      <td className="num">{l.quantite}</td>
+                      <td className="num">{euros(l.prixUnitaire)}</td>
+                      <td className="num">{euros((Number(l.quantite) || 0) * (Number(l.prixUnitaire) || 0))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
 
-        <div className="p-totals">
-          <div><span>Sous-total main d'œuvre</span><span>{euros(totals.moTotal)}</span></div>
-          <div><span>Sous-total travaux (achat)</span><span>{euros(totals.travTotalAchat)}</span></div>
-          <div><span>Marge ({devis.marge}%)</span><span>{euros(totals.travTotal - totals.travTotalAchat)}</span></div>
-          <div className="p-grand"><span>Total</span><span>{euros(totals.total)}</span></div>
-        </div>
+              <div className="p-totals">
+                <div><span>Sous-total main d'œuvre</span><span>{euros(t.moTotal)}</span></div>
+                <div><span>Sous-total travaux (achat)</span><span>{euros(t.travTotalAchat)}</span></div>
+                <div><span>Marge ({p.marge}%)</span><span>{euros(t.travTotal - t.travTotalAchat)}</span></div>
+                <div className={multi ? 'p-poste-total' : 'p-grand'}><span>{multi ? 'Total ' + (p.titre || ('Poste ' + (i + 1))) : 'Total'}</span><span>{euros(t.total)}</span></div>
+              </div>
+            </div>
+          );
+        })}
+
+        {multi && (
+          <div className="p-totals p-totals-global">
+            {totals.postes.map((x, i) => (
+              <div key={x.id}><span>{x.titre || ('Poste ' + (i + 1))}</span><span>{euros(x.t.total)}</span></div>
+            ))}
+            <div className="p-grand"><span>Total général</span><span>{euros(totals.total)}</span></div>
+          </div>
+        )}
       </div>
 
       <div className="bottom-nav">
