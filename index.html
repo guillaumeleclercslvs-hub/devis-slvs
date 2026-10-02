@@ -17,6 +17,7 @@
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/regenerator-runtime@0.13.11/runtime.js"></script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
 <script crossorigin src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
 
 <script>
@@ -198,6 +199,200 @@ function computeTotals(devis) {
   };
 }
 
+// Construit le document Word du devis (utilise la librairie docx chargée en global)
+function buildDevisDocx(devis, totals) {
+  const D = window.docx;
+  const multi = devis.postes.length > 1;
+  const FONT = 'Arial';
+  const RED = 'E2181F';
+  const GREY = '555555';
+  const noBorder = { style: D.BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+  const noBorders = { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder };
+  const thin = { style: D.BorderStyle.SINGLE, size: 4, color: 'BBBBBB' };
+  const thinBorders = { top: thin, bottom: thin, left: thin, right: thin };
+
+  function b64ToBytes(dataUrl) {
+    const b64 = dataUrl.split(',')[1];
+    const bin = atob(b64);
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  function run(text, opts) {
+    const o = opts || {};
+    return new D.TextRun({ text: String(text), font: FONT, size: o.size || 20, bold: !!o.bold, color: o.color || '222222' });
+  }
+  function para(text, opts) {
+    const o = opts || {};
+    return new D.Paragraph({
+      alignment: o.align || D.AlignmentType.LEFT,
+      spacing: { before: o.before || 0, after: o.after === undefined ? 60 : o.after },
+      border: o.border,
+      children: [run(text, o)],
+    });
+  }
+  function cell(content, opts) {
+    const o = opts || {};
+    const children = Array.isArray(content) ? content : [para(content, { size: o.size || 19, bold: o.bold, color: o.color, align: o.align, after: 0 })];
+    return new D.TableCell({
+      children,
+      width: o.width ? { size: o.width, type: D.WidthType.PERCENTAGE } : undefined,
+      shading: o.fill ? { fill: o.fill, type: D.ShadingType.CLEAR, color: 'auto' } : undefined,
+      borders: o.borders || thinBorders,
+      margins: { top: 50, bottom: 50, left: 90, right: 90 },
+      verticalAlign: D.VerticalAlign.CENTER,
+    });
+  }
+  const R = D.AlignmentType.RIGHT;
+
+  function headerRow(labels, widths, aligns) {
+    return new D.TableRow({
+      tableHeader: true,
+      children: labels.map((l, i) => cell(l, { width: widths[i], bold: true, color: 'FFFFFF', fill: '232323', align: aligns[i], size: 18 })),
+    });
+  }
+  function dataRow(values, widths, aligns) {
+    return new D.TableRow({
+      children: values.map((v, i) => cell(v, { width: widths[i], align: aligns[i] })),
+    });
+  }
+  function table(rows, widths) {
+    return new D.Table({
+      width: { size: 100, type: D.WidthType.PERCENTAGE },
+      columnWidths: widths.map((w) => Math.round(w * 90)),
+      rows,
+    });
+  }
+  function sectionTitle(text) {
+    return new D.Paragraph({
+      spacing: { before: 220, after: 80 },
+      border: { bottom: { style: D.BorderStyle.SINGLE, size: 8, color: '232323', space: 2 } },
+      children: [run(text.toUpperCase(), { bold: true, size: 20, color: '232323' })],
+    });
+  }
+  function totalsTable(lines) {
+    // lines: [label, value, isGrand]
+    const rows = lines.map((l) => new D.TableRow({
+      children: [
+        cell(l[0], { width: 70, borders: noBorders, bold: !!l[2], size: l[2] ? 22 : 19, align: R }),
+        cell(l[1], { width: 30, borders: l[2] ? { top: { style: D.BorderStyle.SINGLE, size: 10, color: RED }, bottom: noBorder, left: noBorder, right: noBorder } : noBorders, bold: !!l[2], size: l[2] ? 22 : 19, align: R, color: l[2] ? RED : '222222' }),
+      ],
+    }));
+    return new D.Table({ width: { size: 55, type: D.WidthType.PERCENTAGE }, alignment: D.AlignmentType.RIGHT, columnWidths: [3700, 1900], rows });
+  }
+
+  const children = [];
+
+  // Bandeau noir : logo + coordonnées
+  const logo = new D.Paragraph({
+    children: [new D.ImageRun({ data: b64ToBytes(LOGO_SLVS), transformation: { width: 150, height: 68 } })],
+    spacing: { after: 0 },
+  });
+  const coords = [
+    para('Zone jaune, zone industrielle de Rouxmesnil-Bouteilles', { size: 17, color: 'FFFFFF', align: R, after: 0 }),
+    para('76379 Dieppe Cedex', { size: 17, color: 'FFFFFF', align: R, after: 0 }),
+    para('02 35 06 00 13 — slvs@slvs-tuyauterie.fr', { size: 17, color: 'FFFFFF', align: R, after: 0 }),
+  ];
+  children.push(new D.Table({
+    width: { size: 100, type: D.WidthType.PERCENTAGE },
+    columnWidths: [4000, 5000],
+    rows: [new D.TableRow({ children: [
+      cell([logo], { width: 45, fill: '000000', borders: { top: noBorder, left: noBorder, right: noBorder, bottom: { style: D.BorderStyle.SINGLE, size: 24, color: RED } } }),
+      cell(coords, { width: 55, fill: '000000', borders: { top: noBorder, left: noBorder, right: noBorder, bottom: { style: D.BorderStyle.SINGLE, size: 24, color: RED } } }),
+    ] })],
+  }));
+
+  // Titre
+  children.push(new D.Paragraph({
+    spacing: { before: 240, after: 20 },
+    children: [run((devis.type || 'Devis').toUpperCase() + (devis.numero ? ' N° ' + devis.numero : ''), { bold: true, size: 34, color: '111111' })],
+  }));
+  children.push(para('Tuyauterie · Chaudronnerie · Maintenance industrielle — ' + (devis.date || ''), { size: 18, color: GREY, after: 160 }));
+
+  // Infos client
+  const info = [
+    ['Client :', devis.client || '—', 'Mode :', devis.mode || '—'],
+    ["Donneur d'ordre :", devis.donneurOrdre || '—', 'Chantier / site :', devis.chantier || '—'],
+  ];
+  children.push(new D.Table({
+    width: { size: 100, type: D.WidthType.PERCENTAGE },
+    columnWidths: [1900, 2600, 1900, 2600],
+    rows: info.map((r) => new D.TableRow({ children: [
+      cell(r[0], { width: 21, bold: true, borders: noBorders }), cell(r[1], { width: 29, borders: noBorders }),
+      cell(r[2], { width: 21, bold: true, borders: noBorders }), cell(r[3], { width: 29, borders: noBorders }),
+    ] })),
+  }));
+
+  // Texte du devis
+  if (devis.texte) {
+    children.push(new D.Paragraph({ spacing: { before: 120, after: 0 }, children: [] }));
+    splitTexteLignes(devis.texte).forEach((ligne) => children.push(para(ligne, { size: 19, after: 20 })));
+  }
+
+  const W_MO = [40, 20, 20, 20];
+  const A_MO = [D.AlignmentType.LEFT, R, R, R];
+  const W_TR = [40, 15, 10, 17, 18];
+  const A_TR = [D.AlignmentType.LEFT, D.AlignmentType.LEFT, R, R, R];
+
+  devis.postes.forEach((p, i) => {
+    const t = totals.postes[i].t;
+    const titre = p.titre || ('Poste ' + (i + 1));
+    if (multi) {
+      children.push(new D.Paragraph({
+        spacing: { before: 320, after: 60 },
+        border: { bottom: { style: D.BorderStyle.SINGLE, size: 12, color: RED, space: 2 } },
+        children: [run(titre.toUpperCase(), { bold: true, size: 26, color: RED })],
+      }));
+    }
+    if (p.texte) splitTexteLignes(p.texte).forEach((ligne) => children.push(para(ligne, { size: 19, after: 20 })));
+
+    children.push(sectionTitle("Main d'œuvre"));
+    const moRows = [headerRow(['Poste', 'Nb / Montant', 'Tarif / Marge', 'Total'], W_MO, A_MO)];
+    p.mainOeuvre.forEach((l) => {
+      moRows.push(dataRow([l.poste, String(l.nombre), l.tarif + ' €', euros((Number(l.nombre) || 0) * (Number(l.tarif) || 0))], W_MO, A_MO));
+    });
+    moRows.push(dataRow(['Consommable', euros(p.consommable.montant), p.consommable.marge + '%', euros(t.consoTotal)], W_MO, A_MO));
+    moRows.push(dataRow(['Sous-traitant', euros(p.sousTraitant.montant), p.sousTraitant.marge + '%', euros(t.stTotal)], W_MO, A_MO));
+    children.push(table(moRows, W_MO));
+
+    children.push(sectionTitle('Matériel / Travaux'));
+    const trRows = [headerRow(['Désignation', 'Réf.', 'Qté', 'P.U.', 'Total'], W_TR, A_TR)];
+    if (p.travaux.length === 0) trRows.push(dataRow(['—', '', '', '', ''], W_TR, A_TR));
+    p.travaux.forEach((l) => {
+      trRows.push(dataRow([
+        l.fournisseur ? (l.designation || 'Devis fournisseur') : (l.materiel || '—'),
+        l.fournisseur ? '—' : (l.ref || '—'),
+        String(l.quantite), euros(l.prixUnitaire), euros((Number(l.quantite) || 0) * (Number(l.prixUnitaire) || 0)),
+      ], W_TR, A_TR));
+    });
+    children.push(table(trRows, W_TR));
+
+    children.push(new D.Paragraph({ spacing: { before: 120, after: 0 }, children: [] }));
+    children.push(totalsTable([
+      ["Sous-total main d'œuvre", euros(t.moTotal)],
+      ['Sous-total travaux (achat)', euros(t.travTotalAchat)],
+      ['Marge (' + p.marge + '%)', euros(t.travTotal - t.travTotalAchat)],
+      [multi ? 'Total ' + titre : 'TOTAL', euros(t.total), true],
+    ]));
+  });
+
+  if (multi) {
+    children.push(new D.Paragraph({ spacing: { before: 300, after: 0 }, children: [] }));
+    const lines = totals.postes.map((x, i) => [x.titre || ('Poste ' + (i + 1)), euros(x.t.total)]);
+    lines.push(['TOTAL GÉNÉRAL', euros(totals.total), true]);
+    children.push(totalsTable(lines));
+  }
+
+  return new D.Document({
+    styles: { default: { document: { run: { font: FONT, size: 20 } } } },
+    sections: [{
+      properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 900, right: 900, bottom: 900, left: 900 } } },
+      children,
+    }],
+  });
+}
+
 function RivetPlate({ children, className = '' }) {
   return (
     <div className={`rivet-plate ${className}`}>
@@ -371,6 +566,27 @@ function DevisApp() {
       showToast('Fichier téléchargé — enregistrez-le où vous voulez (OneDrive, etc.)');
     } catch (e) {
       showToast('Échec de l’export', 'err');
+    }
+  }
+
+  function exportWord() {
+    try {
+      if (!window.docx) { showToast('Librairie Word non chargée (connexion ?)', 'err'); return; }
+      const doc = buildDevisDocx(devis, totals);
+      window.docx.Packer.toBlob(doc).then((blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const nom = (devis.numero || 'devis').replace(/[^a-zA-Z0-9-_]/g, '_');
+        a.href = url;
+        a.download = `${devis.type || 'Devis'}_${nom}.docx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Fichier Word téléchargé');
+      }).catch(() => showToast('Échec de la création du Word', 'err'));
+    } catch (e) {
+      showToast('Échec de la création du Word', 'err');
     }
   }
 
@@ -1142,6 +1358,7 @@ function DevisApp() {
 
           <div className="btn-row">
             <button className="save-btn" onClick={saveDevis}><Save size={16} /> Enregistrer le devis</button>
+            <button className="print-btn" onClick={exportWord}><FileText size={16} /> Exporter Word (.docx)</button>
             <button className="print-btn" onClick={() => { exportDevisFile(); window.print(); }}><FileText size={16} /> Imprimer / PDF</button>
           </div>
           <div className="btn-row">
